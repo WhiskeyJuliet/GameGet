@@ -1,0 +1,159 @@
+      
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGDB Game Search</title>
+    <!-- Link the main stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Link Google Fonts (Choose a few popular ones) -->
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500;700&family=Source+Sans+3:wght@400;600&family=Tiny5&display=swap" rel="stylesheet">
+
+</head>
+<body> <!-- Body tag will get data-theme attribute -->
+
+          
+<!-- Settings Cog Button -->
+    <button id="settings-cog" aria-label="Open Settings" title="Settings">
+        <img src="images/settings.png" alt="Settings">  <!-- Image tag pointing to your file -->
+    </button>
+
+
+    <!-- Settings Panel (Initially Hidden) -->
+    <div id="settings-panel" class="settings-panel-hidden">
+        <button id="settings-close" aria-label="Close Settings" title="Close">×</button>
+        <h2>Settings</h2>
+
+        <!-- Color Theme Selection -->
+        <fieldset class="settings-group">
+            <legend>Color Theme</legend>
+            <div class="radio-group" id="theme-radio-group">
+                <label><input type="radio" name="theme" value="light" checked> Light</label>
+                <label><input type="radio" name="theme" value="dark"> Dark</label>
+                <label><input type="radio" name="theme" value="purple"> Purple</label>
+                <label><input type="radio" name="theme" value="hotdogstand"> Hotdog Stand</label>
+                <label><input type="radio" name="theme" value="custom"> Custom</label> <!-- Add Custom Radio -->
+            </div>
+        </fieldset>
+
+        <!-- Custom Color Editor (Initially Hidden) -->
+        <fieldset class="settings-group" id="custom-color-editor" style="display: none;">
+             <legend>Custom Theme Colors</legend>
+             <div class="custom-color-grid">
+
+                <!-- Example Entry (Repeat for all variables) -->
+                <div class="color-input-group">
+                    <label for="custom-bg-color">Background:</label>
+                    <input type="color" id="custom-bg-color" data-varname="--bg-color">
+                    <input type="text" data-varname="--bg-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                <div class="color-input-group">
+                    <label for="custom-element-bg">Elements:</label>
+                    <input type="color" id="custom-element-bg" data-varname="--element-bg">
+                    <input type="text" data-varname="--element-bg" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-text-color">Text:</label>
+                    <input type="color" id="custom-text-color" data-varname="--text-color">
+                    <input type="text" data-varname="--text-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                <div class="color-input-group">
+                    <label for="custom-text-muted">Muted Text:</label>
+                    <input type="color" id="custom-text-muted" data-varname="--text-muted">
+                    <input type="text" data-varname="--text-muted" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-border-color">Border:</label>
+                    <input type="color" id="custom-border-color" data-varname="--border-color">
+                    <input type="text" data-varname="--border-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-border-light">Light Border:</label>
+                    <input type="color" id="custom-border-light" data-varname="--border-light">
+                    <input type="text" data-varname="--border-light" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-primary-color">Primary:</label>
+                    <input type="color" id="custom-primary-color" data-varname="--primary-color">
+                    <input type="text" data-varname="--primary-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                <div class="color-input-group">
+                    <label for="custom-primary-hover">Primary Hover:</label>
+                    <input type="color" id="custom-primary-hover" data-varname="--primary-hover">
+                    <input type="text" data-varname="--primary-hover" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                <div class="color-input-group">
+                    <label for="custom-accent-color">Accent:</label>
+                    <input type="color" id="custom-accent-color" data-varname="--accent-color">
+                    <input type="text" data-varname="--accent-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-accent-darker">Accent Darker:</label>
+                    <input type="color" id="custom-accent-darker" data-varname="--accent-darker">
+                    <input type="text" data-varname="--accent-darker" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                 <div class="color-input-group">
+                    <label for="custom-error-color">Error:</label>
+                    <input type="color" id="custom-error-color" data-varname="--error-color">
+                    <input type="text" data-varname="--error-color" class="hex-input" maxlength="7" pattern="#[a-fA-F0-9]{6}">
+                </div>
+                <!-- You don't usually need inputs for shadow colors as they include alpha -->
+
+             </div>
+             <button id="reset-custom-colors" type="button">Reset to Theme Defaults</button>
+        </fieldset>
+
+        <!-- Font Selection -->
+        <fieldset class="settings-group">
+            <legend>Font</legend>
+            <select id="font-selector" name="font">
+				<option value="'pxSans', sans-serif">pxSans</option>
+				<option value="'Tiny5', sans-serif">Tiny5</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Open Sans', sans-serif">Open Sans</option>
+                <option value="'Lato', sans-serif">Lato</option>
+                <option value="'Source Sans 3', sans-serif">Source Sans 3</option>
+                <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'">System Default</option>
+            </select>
+        </fieldset>
+    </div>
+    <!-- End Settings Panel -->
+
+
+    <h1>GameGet</h1>
+    <h3>A IGDB Search Tool</h3>
+
+    <div class="search-container">
+        <input type="text" id="gameInput" placeholder="Enter game name...">
+        <button id="searchButton">Search</button>
+    </div>
+
+    <div id="results">
+        <p class="info-message">Enter a game name and click Search.</p>
+    </div>
+
+    <p class="disclaimer">
+        Data provided by <a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer">IGDB.com</a>.
+    </p>
+	
+	<p class="credits">
+		<a href="https://www.wtrjones.co.uk/gameget/" target="_blank" rel="noopener noreferrer"><img src="images/whiskey.png"></a>
+		<a href="https://www.twitch.tv/whiskey_juliet" target="_blank" rel="noopener noreferrer"><img src="images/twitch.png"></a>
+		<a href="https://www.youtube.com/@whiskeyjuliet" target="_blank" rel="noopener noreferrer"><img src="images/youtube.png"></a>
+		<a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer"><img src="images/igdb.png"></a>
+		<a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer"><img src="images/node.png"></a>
+		<a href="https://www.npmjs.com/" target="_blank" rel="noopener noreferrer"><img src="images/npm.png"></a>
+		<a href="https://www.gog.com/" target="_blank" rel="noopener noreferrer"><img src="images/gog.png"></a>
+    </p>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+    

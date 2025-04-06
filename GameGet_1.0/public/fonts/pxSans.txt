@@ -1,0 +1,7 @@
+pxSans - a font by William T R Jones
+
+This is a simple low fidelity true type font (ttf) I made called pxSans.
+It’s my take on making a simple ‘Sans Serif’ font that conforms to a 5px by 9px grid for each character.
+
+This font is available for free for non-commercial use.
+If you paid for this free-version of pxSans please email licence@wtrjones.co.uk.

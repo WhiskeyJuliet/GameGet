@@ -1,0 +1,678 @@
+/* === Define Local Font === */
+@font-face {
+  font-family: 'pxSans'; /* Choose a name for your font */
+  src: url('/fonts/pxSans.woff') format('woff'); /* Path relative to the public root */
+  /* Optional: Specify weight/style if the file is specific */
+  /* font-weight: normal; */
+  /* font-style: normal; */
+}
+
+/* === CSS Variables (Defaults - Light Theme) === */
+:root {
+    /* Color Palette */
+    --bg-color: #f8f9fa;
+    --element-bg: #ffffff;
+    --text-color: #343a40;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --border-light: #e9ecef;
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+    --accent-color: #f1f3f5; /* Used for hover, tags etc */
+    --accent-darker: #ced4da;
+    --error-color: #dc3545;
+    --shadow-color: rgba(0, 0, 0, 0.05);
+    --shadow-light: rgba(0, 0, 0, 0.07);
+
+    /* Font */
+    --body-font: 'pxSans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Default Font */
+}
+
+/* === Dark Theme === */
+body[data-theme="dark"] {
+    --bg-color: #212529;
+    --element-bg: #343a40;
+    --text-color: #f8f9fa;
+    --text-muted: #adb5bd;
+    --border-color: #495057;
+    --border-light: #495057;
+    --primary-color: #0d6efd; /* Slightly brighter blue for dark */
+    --primary-hover: #0b5ed7;
+    --accent-color: #495057;
+    --accent-darker: #6c757d;
+    --error-color: #f86c7d;
+    --shadow-color: rgba(255, 255, 255, 0.05);
+    --shadow-light: rgba(255, 255, 255, 0.07);
+}
+
+/* === Purple Theme === */
+body[data-theme="purple"] {
+    --bg-color: #4a345c;
+    --element-bg: #3b3440;
+    --text-color: #f8f9fa;
+    --text-muted: #adb5bd;
+    --border-color: #35293f;
+    --border-light: #35293f;
+    --primary-color: #9612db; 
+    --primary-hover: #790eb1;
+    --accent-color: #35293f;
+    --accent-darker: #6c757d;
+    --error-color: #f86c7d;
+    --shadow-color: rgba(255, 255, 255, 0.05);
+    --shadow-light: rgba(255, 255, 255, 0.07);
+}
+
+/* === Hotdog Stand Theme === */
+body[data-theme="hotdogstand"] {
+    --bg-color: #FF0000;
+    --element-bg: #FFFF00;
+    --text-color: #000000; 
+    --text-muted: #FFFFFF;
+    --border-color: #000000;
+    --border-light: #000000;
+    --primary-color: #000000; 
+    --primary-hover: #808080;
+    --accent-color: #F1F3F5;
+    --accent-darker: #CED4DA;
+    --error-color: #DC3545;
+    --shadow-color: rgba(0, 0, 0, 0.05);
+    --shadow-light: rgba(0, 0, 0, 0.07);
+}
+
+
+/* === Global Styles & Body (Using Variables) === */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--body-font); /* Apply font variable */
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 15px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
+}
+
+/* === Headings & Basic Text === */
+h1 {
+    text-align: center;
+    color: var(--text-color); /* Use text color or a specific heading color */
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+h2 { /* Added for settings panel */
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+h3 {
+    text-align: center;
+    color: var(--text-color); /* Use text color or a specific heading color */
+    margin-bottom: 15px;
+    font-weight: 300;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: var(--primary-hover);
+}
+
+/* === Search Input Area === */
+.search-container {
+    display: flex;
+    margin-bottom: 30px;
+    gap: 10px;
+}
+
+#gameInput {
+    flex-grow: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: var(--element-bg); /* Input background */
+    color: var(--text-color); /* Input text color */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#gameInput::placeholder { /* Style placeholder */
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+#gameInput:focus {
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 0, 123, 255), 0.25); /* Needs RGB version of primary or fallback */
+}
+
+#searchButton {
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: #ffffff; /* Assuming white text on primary buttons */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#searchButton:hover {
+    background-color: var(--primary-hover);
+}
+
+#searchButton:active {
+    transform: scale(0.98);
+}
+
+#searchButton:disabled {
+    background-color: var(--text-muted); /* Use muted color for disabled */
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* === Results Area === */
+#results {
+    background-color: var(--element-bg);
+    padding: 25px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px var(--shadow-color);
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* Info & Error Messages */
+.info-message {
+    color: var(--text-muted);
+    margin: 20px 0;
+    font-size: 1rem;
+}
+.error-message {
+    color: var(--error-color);
+    font-weight: bold;
+    margin: 20px 0;
+    font-size: 1rem;
+}
+
+/* Loading Indicator */
+.loading::after {
+    content: ' Loading...';
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+/* === Search Results List === */
+.search-results-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+    width: 100%;
+    text-align: left;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--accent-darker) var(--accent-color); /* Firefox: thumb track */
+}
+
+/* Webkit scrollbar styling */
+.search-results-list::-webkit-scrollbar {
+    width: 8px;
+}
+.search-results-list::-webkit-scrollbar-track {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+.search-results-list::-webkit-scrollbar-thumb {
+    background-color: var(--accent-darker);
+    border-radius: 4px;
+    border: 2px solid var(--accent-color);
+}
+.search-results-list::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-muted);
+}
+
+.search-result-item {
+    padding: 12px 15px;
+    border: 1px solid var(--border-light);
+    background-color: var(--element-bg);
+    color: var(--text-color); /* Ensure text color inherits */
+    margin-bottom: 10px;
+    margin-right: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+    font-size: 1em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-result-item:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-darker);
+    transform: translateY(-1px);
+}
+
+.game-title {
+    flex-grow: 1;
+    margin-right: 15px;
+    font-weight: 500;
+}
+
+.game-shortdate {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* === Game Details Display === */
+.game-info {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    margin-top: 0px;
+}
+
+.game-info > img {
+    width: 120px;
+    height: auto;
+    max-width: 30%;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px var(--shadow-light);
+    flex-shrink: 0;
+    object-fit: cover;
+    background-color: var(--accent-color); /* Add bg color for placeholders */
+}
+
+.game-details {
+   flex-grow: 1;
+}
+
+.game-details h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.game-details p {
+    margin: 8px 0;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.game-details strong {
+    color: var(--text-color); /* Ensure strong text matches main text */
+    font-weight: 600;
+}
+
+/* Platform Tags Styling */
+.game-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+	align-items: flex-start;
+}
+
+
+/* Platform Tags Styling (Updated) */
+.game-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    display: flex; /* Still use flexbox for the container */
+    flex-wrap: wrap; /* Allow tags to wrap */
+    gap: 10px; /* Spacing between platform items */
+}
+
+/* Style for EACH platform list item (<li>) */
+.platform-item {
+    background-color: var(--accent-color);
+    color: var(--text-muted);
+    padding: 5px 10px; /* Adjust padding as needed */
+    border-radius: 15px; /* Adjust for desired shape */
+    font-size: 0.85em;
+    line-height: 1.4;
+    border: 1px solid var(--border-light);
+    /* --- Use Flexbox to align icon and text --- */
+    display: inline-flex; /* Changed from block-level flex on UL */
+    align-items: center; /* Vertically center icon and text */
+    gap: 6px; /* Space between icon and text */
+}
+
+/* Style for the platform logo image (<img>) */
+.platform-logo {
+    width: 16px;
+    height: 16px;
+    object-fit: contain; /* Scale nicely if source is larger */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+	max-width: none;     /* Reset any potential inherited max-width */
+    max-height: none;    /* Reset any potential inherited max-height */
+    /* vertical-align: middle; */ /* Not needed with flex align-items: center */
+}
+
+/* === Store Links === */
+.store-links-container {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: flex-start;
+    min-height: 30px; /* Give it some height for loading msg */
+}
+
+.store-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px;
+    border-radius: 4px;
+    background-color: var(--accent-darker);
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    border: 1px solid transparent;
+}
+
+.store-button:hover {
+    /*transform: translateY(-1px);*/
+    box-shadow: 0 2px 4px var(--shadow-light);
+    text-decoration: none;
+	color: #ffffff;
+}
+
+.store-logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0; /* Prevent logo from shrinking */
+}
+
+/* Specific GOG Button Style */
+.gog-button {
+    background-color: #8a43ce; /* GOG purple */
+    color: #ffffff;
+}
+.gog-button:hover {
+    background-color: #6e36a8;
+}
+
+/* Loading/Error messages within store container */
+.store-loading, .store-error {
+    width: 100%;
+    text-align: left;
+    margin: 5px 0;
+    color: var(--text-muted); /* Use muted for loading */
+    font-size: 0.9em;
+}
+.store-error {
+    color: var(--error-color); /* Use error color */
+} 
+
+ 
+/* === Settings Cog & Panel === */
+#settings-cog {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: var(--element-bg);
+    /* color: var(--text-muted); /* Color no longer applies directly to img */
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 40px;  /* Keep button size */
+    height: 40px; /* Keep button size */
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    z-index: 1001;
+    transition: transform 0.2s ease; /* Keep hover transform, remove color transition */
+}
+
+/* Remove color change on hover, keep rotation */
+#settings-cog:hover {
+    /* color: var(--text-color); */
+    transform: rotate(45deg);
+}
+
+/* Remove SVG specific rule if it existed */
+/* #settings-cog svg { ... } */
+
+/* --- Add styling for the image INSIDE the button --- */
+#settings-cog img {
+    display: block; /* Ensures image behaves like a block element */
+    width: 24px;    /* Set desired image display width */
+    height: 24px;   /* Set desired image display height */
+    object-fit: contain; /* Scale image nicely if not perfectly square */
+}
+/* --- End image styling --- */
+
+
+#settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px; /* Panel width */
+    max-width: 90%;
+    height: 100%;
+    background-color: var(--element-bg);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -5px 0 15px var(--shadow-color);
+    padding: 20px;
+    padding-top: 50px; /* Space for close button */
+    z-index: 1000;
+    overflow-y: auto;
+    transform: translateX(100%); /* Start off-screen */
+    transition: transform 0.3s ease-in-out;
+    color: var(--text-color); /* Ensure text color inside panel matches theme */
+}
+    
+
+#settings-panel.visible {
+    transform: translateX(0); /* Slide in */
+}
+
+#settings-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+#settings-close:hover {
+    color: var(--text-color);
+}
+
+.settings-group {
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.settings-group legend {
+    padding: 0 10px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Radio buttons and Select styling */
+.radio-group label {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+    margin-right: 8px;
+    accent-color: var(--primary-color); /* Style radio button itself */
+}
+
+#font-selector {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--element-bg);
+    color: var(--text-color);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+#font-selector:focus {
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 0, 123, 255), 0.25);
+}
+
+/* === Custom Color Editor Styles === */
+#custom-color-editor {
+    border-color: var(--primary-color); /* Highlight when active */
+}
+
+.custom-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid */
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.color-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-input-group label {
+    flex-basis: 100px; /* Fixed label width */
+    flex-shrink: 0;
+    font-size: 0.9em;
+    text-align: right;
+    color: var(--text-muted);
+}
+
+.color-input-group input[type="color"] {
+    width: 35px;
+    height: 30px;
+    padding: 2px; /* Small padding */
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: var(--element-bg); /* Ensure background matches */
+}
+/* Remove default OS border/styles on color input */
+.color-input-group input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.color-input-group input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 3px;
+}
+/* Firefox */
+.color-input-group input[type="color"]::-moz-color-swatch {
+     border: none;
+     border-radius: 3px;
+}
+
+
+.color-input-group .hex-input {
+    width: 80px; /* Fixed width for hex */
+    padding: 5px 8px;
+    font-family: monospace;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--element-bg);
+    color: var(--text-color);
+    text-transform: uppercase;
+}
+
+#reset-custom-colors {
+    display: block; /* Make it block */
+    margin: 15px auto 0 auto; /* Center it */
+    padding: 8px 15px;
+    font-size: 0.9em;
+    background-color: var(--text-muted);
+    color: var(--bg-color); /* Contrast text */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#reset-custom-colors:hover {
+     background-color: var(--error-color); /* Use error color for reset? */
+     color: #fff;
+}
+
+/* === Disclaimer === */
+.disclaimer {
+    margin-top: 30px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 15px;
+}
+
+.disclaimer a {
+    color: var(--text-muted); /* Match surrounding text color */
+}
+
+/* === Disclaimer === */
+.credits {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-align: center;
+
+}
+
+.credits a {
+    color: var(--text-muted); /* Match surrounding text color */
+	margin-right: 8px;
+    box-shadow: 0 4px 6px var(--shadow-color);
+}
