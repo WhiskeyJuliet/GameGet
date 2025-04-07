@@ -28,7 +28,7 @@ This guide explains how to set up and run the GameGet application locally on you
     * Copy the **Client ID**.
     * Click "New Secret" to generate a **Client Secret**. **Copy this secret immediately and store it securely.** You will not be able to see it again after leaving the page.
 1. **Create `.env` File:**
-    * In the root of your project folder (`gameget-app/`), create a new file named exactly `.env` (note the leading dot), or use the included `.env.sample` as a template.
+    * In the root of your project folder, create a new file named exactly `.env` (note the leading dot), or use the included `.env.sample` as a template.
     * Open the `.env` file in your text editor and add your Twitch credentials like this, replacing the placeholders with the actual values you copied:
         ```
         TWITCH_CLIENT_ID=YOUR_ACTUAL_CLIENT_ID_HERE
