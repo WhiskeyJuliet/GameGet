@@ -36,7 +36,7 @@ This guide explains how to set up and run the GameGet application locally on you
         ```
 ## Running the application
 1. **Start the server**
-    * `npm run`
+    * `npm start`
     * You should see output similar to:
         ```
         Server listening at http://localhost:3000
