@@ -67,7 +67,7 @@ body[data-theme="hotdogstand"] {
     --bg-color: #FF0000;
     --element-bg: #FFFF00;
     --text-color: #000000; 
-    --text-muted: #FFFFFF;
+    --text-muted: #000000;
     --border-color: #000000;
     --border-light: #000000;
     --primary-color: #000000; 
