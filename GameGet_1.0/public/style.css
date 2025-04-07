@@ -72,7 +72,7 @@ body[data-theme="hotdogstand"] {
     --border-light: #000000;
     --primary-color: #000000; 
     --primary-hover: #808080;
-    --accent-color: #F1F3F5;
+    --accent-color: #FF0000;
     --accent-darker: #CED4DA;
     --error-color: #DC3545;
     --shadow-color: rgba(0, 0, 0, 0.05);
