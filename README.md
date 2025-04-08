@@ -1,5 +1,5 @@
 # GameGet
-A IGDB search tool - Made with the assistance of Google AI Studio; a foreword regarding this can be found here on my [website](https://www.wtrjones.co.uk/gameget/)
+An IGDB search tool - Made with the assistance of Google AI Studio; a foreword regarding this can be found here on my [website](https://www.wtrjones.co.uk/gameget/)
 
 This guide explains how to set up and run the GameGet application locally on your machine.
 
