@@ -513,11 +513,11 @@ a:hover {
 
 #settings-close {
     position: absolute;
-    top: 10px;
-    right: 15px;
+    top: 3px;
+    right: 248px;
     background: none;
     border: none;
-    font-size: 2.5rem;
+    font-size: 2rem;
     line-height: 1;
     color: var(--text-muted);
     cursor: pointer;
