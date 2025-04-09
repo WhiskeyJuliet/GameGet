@@ -145,6 +145,30 @@
         </fieldset>
         <!-- End GOG Button Toggle -->
 		
+		 <!-- NEW: Platform Display Settings -->
+        <fieldset class="settings-group">
+            <legend>Platform Display</legend>
+
+            <!-- Logo Size -->
+            <div class="setting-row">
+                <label for="platform-logo-size">Logo Size (px):</label>
+                <input type="number" id="platform-logo-size" name="platformLogoSize" min="8" max="48" step="1" value="16"> <!-- Default 16px -->
+                <!-- Optional: Add a slider as well/instead -->
+                <!-- <input type="range" id="platform-logo-size-slider" min="8" max="48" step="1" value="16"> -->
+            </div>
+
+            <!-- Text Visibility -->
+            <div class="setting-row">
+                 <label>Platform Name:</label> <!-- Label for the group -->
+                 <div class="radio-group" id="platform-text-toggle-group">
+                    <label><input type="radio" name="platformTextToggle" value="show" checked> Show</label> <!-- Default to Show -->
+                    <label><input type="radio" name="platformTextToggle" value="hide"> Hide</label>
+                </div>
+            </div>
+
+        </fieldset>
+        <!-- End Platform Display Settings -->
+		
     </div>
     <!-- End Settings Panel -->
 

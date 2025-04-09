@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const exportButton = document.getElementById('export-colors-button'); // Import, Export and file dialogue
     const importButton = document.getElementById('import-colors-button');
     const importFileInput = document.getElementById('import-file-input');
-	
+	const platformLogoSizeInput = document.getElementById('platform-logo-size');
+    const platformTextToggleGroup = document.getElementById('platform-text-toggle-group');
 	
 
     const API_BASE_URL = 'http://localhost:3000';
@@ -29,87 +30,58 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
     const LOCAL_STORAGE_CUSTOM_COLORS_KEY = 'customThemeColors';
 	const LOCAL_STORAGE_GOG_KEY = 'gogButtonEnabled';
-
+	const LOCAL_STORAGE_LOGO_SIZE_KEY = 'platformLogoSize';
+    const LOCAL_STORAGE_PLATFORM_TEXT_KEY = 'platformTextVisible';
 
     // --- Verify crucial elements exist ---
-    if (!searchButton) {
-        console.error("CRITICAL ERROR: Search button (#searchButton) not found in DOM!");
-        alert("Initialization Error: Search button missing. App may not function."); // User feedback
-        return; // Stop script execution if button is missing
+    if (!searchButton || !gameInput || !resultsDiv || !gogToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !customColorEditor || !resetCustomColorsButton
+        || !platformLogoSizeInput || !platformTextToggleGroup ) { 
+        console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
+        alert("Initialization Error: UI elements missing. App may not function correctly.");
+        return;
     }
-    if (!gameInput) {
-         console.error("CRITICAL ERROR: Game input (#gameInput) not found in DOM!");
-         alert("Initialization Error: Game input missing. App may not function.");
-         return;
-    }
-    if (!resultsDiv) {
-         console.error("CRITICAL ERROR: Results container (#results) not found in DOM!");
-         alert("Initialization Error: Results area missing. App may not function.");
-         return;
-    }
-	if (!gogToggleGroup) { console.error("CRITICAL ERROR: GOG Toggle Group not found!");
-		return;
-	}
-	if (!exportButton || !importButton || !importFileInput) { console.error("CRITICAL ERROR: Import/Export elements not found!");
-		return;
-	}
-	if (!obsButtonContainer) { console.error("CRITICAL ERROR: OBS Button Container not found!");
-		return;
-	}
+    console.log("All essential elements verified.");
     // Add similar checks for settings elements if needed
 
 
     // --- Event Listeners ---
-    searchButton.addEventListener('click', searchGamesList);
-    console.log("Search button click listener attached."); // <<<--- DEBUG LOG
-
-    gameInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-            console.log("Enter key pressed in input, calling searchGamesList..."); // <<<--- DEBUG LOG
-            searchGamesList();
-        }
-    });
-
-    // Settings Panel Listeners
+	searchButton.addEventListener('click', searchGamesList);
+    console.log("Search button click listener attached.");
+    gameInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') searchGamesList(); });
+    console.log("Game input keypress listener attached.");
     settingsCog.addEventListener('click', () => settingsPanel.classList.add('visible'));
+    console.log("Settings cog listener attached.");
     settingsClose.addEventListener('click', () => settingsPanel.classList.remove('visible'));
-    document.addEventListener('click', (event) => { // Close on outside click
-        if (!settingsPanel.contains(event.target) && !settingsCog.contains(event.target) && settingsPanel.classList.contains('visible')) {
-           settingsPanel.classList.remove('visible');
-        }
-    });
-
-    // Theme Change Listener
-    themeRadioGroup.addEventListener('change', (event) => {
-        if (event.target.type === 'radio') applyTheme(event.target.value);
-    });
-
-    // Font Change Listener
+    console.log("Settings close listener attached.");
+    document.addEventListener('click', (event) => { if (!settingsPanel.contains(event.target) && !settingsCog.contains(event.target) && settingsPanel.classList.contains('visible')) settingsPanel.classList.remove('visible'); });
+    console.log("Document click listener attached.");
+    themeRadioGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') applyTheme(event.target.value); });
+    console.log("Theme listener attached.");
     fontSelector.addEventListener('change', (event) => applyFont(event.target.value));
-	
-	 // GOG Toggle Listener
-    gogToggleGroup.addEventListener('change', (event) => {
-        if (event.target.type === 'radio') {
-            // Pass true if 'on' is selected, false otherwise
-            applyGogToggle(event.target.value === 'on');
-        }
-    });
-
-    // Custom Color Input Listeners
-    customColorInputs.forEach(picker => {
-        picker.addEventListener('input', handleColorInputChange);
-        picker.addEventListener('change', handleColorInputChange);
-    });
-    customHexInputs.forEach(hexInput => {
-        hexInput.addEventListener('change', handleHexInputChange);
-    });
+    console.log("Font listener attached.");
+    gogToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') applyGogToggle(event.target.value === 'on'); });
+    console.log("GOG toggle listener attached.");
+    customColorInputs.forEach(picker => { picker.addEventListener('input', handleColorInputChange); picker.addEventListener('change', handleColorInputChange); });
+    console.log("Custom color picker listeners attached.");
+    customHexInputs.forEach(hexInput => { hexInput.addEventListener('change', handleHexInputChange); });
+    console.log("Custom hex input listeners attached.");
     resetCustomColorsButton.addEventListener('click', resetCustomColorsToThemeDefaults);
-	
-    // Import, Export and File Selector Listeners
+    console.log("Reset colors listener attached.");
 	exportButton.addEventListener('click', exportCustomColors);
+    console.log("Export listener attached.");
     importButton.addEventListener('click', () => importFileInput.click());
+    console.log("Import listener attached.");
     importFileInput.addEventListener('change', importCustomColors);
+    console.log("File input listener attached.");
+	// --- ADD PLATFORM DISPLAY LISTENERS ---
+    platformLogoSizeInput.addEventListener('input', (event) => { applyLogoSize(event.target.value); });
+    platformLogoSizeInput.addEventListener('change', (event) => { applyLogoSize(event.target.value, true); });
+    console.log("Platform logo size listeners attached.");
+    platformTextToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') { applyPlatformTextVisibility(event.target.value === 'show'); }});
+    console.log("Platform text toggle listener attached.");
+    // --- END ADD ---
 
+    console.log("Finished attaching event listeners.");
 
 
 
@@ -195,25 +167,6 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 
-	function saveCustomColors() {
-        try {
-            const customColors = {};
-            customColorInputs.forEach(picker => {
-                if(picker.dataset.varname) {
-                   customColors[picker.dataset.varname] = picker.value;
-                }
-            });
-            // <<< ADD LOG HERE >>>
-            console.log("--- Saving Custom Colors ---");
-            console.log("Values read from inputs:", JSON.stringify(customColors, null, 2));
-            // <<< END ADD LOG >>>
-            localStorage.setItem(LOCAL_STORAGE_CUSTOM_COLORS_KEY, JSON.stringify(customColors));
-            // console.log("Saved custom colors:", customColors); // Original log
-        } catch (e) {
-            console.error("Error saving custom colors to localStorage:", e);
-        }
-    }
-
     function loadCustomColors() {
         const savedColors = localStorage.getItem(LOCAL_STORAGE_CUSTOM_COLORS_KEY);
         if (savedColors) {
@@ -253,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 
- function resetCustomColorsToThemeDefaults() {
+	function resetCustomColorsToThemeDefaults() {
          try {
             const selectedPresetRadio = themeRadioGroup.querySelector('input[name="theme"]:checked:not([value="custom"])') || themeRadioGroup.querySelector('input[name="theme"][value="light"]');
             const baseThemeName = selectedPresetRadio.value;
@@ -306,38 +259,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
               // if (originalInlineStyle) document.body.setAttribute('style', originalInlineStyle);
          }
     }
-
-    // Ensure populateCustomColorInputsFromComputed is still correct
-    function populateCustomColorInputsFromComputed() {
-        try {
-            const computedStyle = getComputedStyle(document.body);
-            customColorInputs.forEach(picker => {
-                const varName = picker.dataset.varname;
-                if (varName) {
-                    const computedValue = computedStyle.getPropertyValue(varName).trim();
-                    syncColorInputs(varName, computedValue);
-                    // Apply this computed (preset theme) value as the new inline style
-                    updateCustomColor(varName, computedValue);
-                }
-            });
-            console.log("Populated custom color inputs AND applied computed styles to body.");
-        } catch(e) {
-            console.error("Error populating/applying custom inputs from computed styles:", e);
-        }
-    }
-
-    // Ensure applyFont sets the inline style correctly
-    function applyFont(fontName) {
-        try {
-            console.log("Applying font:", fontName);
-            document.body.style.setProperty('--body-font', fontName); // Sets inline style
-            localStorage.setItem(LOCAL_STORAGE_FONT_KEY, fontName);
-        } catch (e) {
-            console.error(`Error applying font ${fontName}:`, e);
-        }
-    }
-
-
+   
     function applyTheme(themeName) {
         console.log("Applying theme:", themeName);
         try {
@@ -374,17 +296,37 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 
-     function applyGogToggle(isEnabled) { // <-- Add Function
+    function applyGogToggle(isEnabled) { 
         console.log("Setting GOG button visibility preference:", isEnabled);
+         // 1. Add/Remove class on body for instant visual feedback
+        document.body.classList.toggle('gog-links-hidden', !isEnabled); // Add class if NOT enabled
+
+        // 2. Save preference to localStorage
         localStorage.setItem(LOCAL_STORAGE_GOG_KEY, isEnabled ? 'true' : 'false'); // Save preference
-        // Note: We don't need to immediately hide/show anything here,
-        // the check happens when details are displayed.
     }
-	
+
+    function applyLogoSize(size, savePreference = false) {
+        const validSize = Math.max(8, Math.min(48, parseInt(size) || 16));
+        console.log(`Applying platform logo size: ${validSize}px`);
+        document.documentElement.style.setProperty('--platform-logo-size', `${validSize}px`);
+        if (platformLogoSizeInput.value != validSize) {
+             platformLogoSizeInput.value = validSize;
+        }
+        if (savePreference) {
+            localStorage.setItem(LOCAL_STORAGE_LOGO_SIZE_KEY, validSize);
+            console.log(`Saved logo size preference: ${validSize}`);
+        }
+    }
+
+    function applyPlatformTextVisibility(isVisible) {
+        console.log(`Setting platform text visibility: ${isVisible}`);
+        document.body.classList.toggle('platform-text-hidden', !isVisible); // Add class if NOT visible
+        localStorage.setItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY, isVisible ? 'true' : 'false');
+    }
+    
 	function loadSettings() {
         try { // Wrap entire function for safety
             const savedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
-            const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
             const defaultTheme = 'light';
 
             let themeToApply = savedTheme || defaultTheme;
@@ -411,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             }
 
             // Apply saved font
+			const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
             if (savedFont) {
                 // Validate font
                  const validFonts = Array.from(fontSelector.options).map(option => option.value);
@@ -428,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             const savedGogEnabled = localStorage.getItem(LOCAL_STORAGE_GOG_KEY);
             // Default to 'true' (enabled) if no setting is saved yet
             const gogIsEnabled = savedGogEnabled === null ? true : (savedGogEnabled === 'true');
+			applyGogToggle(gogIsEnabled); // Apply the setting (which now includes adding/removing class)
             const valueToSelect = gogIsEnabled ? 'on' : 'off';
             const currentGogRadio = gogToggleGroup.querySelector(`input[name="gogToggle"][value="${valueToSelect}"]`);
             if (currentGogRadio) {
@@ -438,16 +382,34 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             }
             // --- End GOG Toggle Load ---
 
-            console.log(`Loaded settings: Theme='${themeToApply}', Font='${savedFont || 'Default'}'`);
+			// Platform Text Visibility
+            const savedTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY);
+            const textIsVisible = savedTextVisible === null ? true : (savedTextVisible === 'true');
+            applyPlatformTextVisibility(textIsVisible); // Apply visibility class
+            const textValueToSelect = textIsVisible ? 'show' : 'hide'; // Determine correct radio value
+            const currentTextRadio = platformTextToggleGroup.querySelector(`input[name="platformTextToggle"][value="${textValueToSelect}"]`); // Find correct radio
+            if (currentTextRadio) {
+                currentTextRadio.checked = true; // Set checked state
+            } else { // Fallback
+                 const defaultTextRadio = platformTextToggleGroup.querySelector('input[name="platformTextToggle"][value="show"]');
+                 if (defaultTextRadio) defaultTextRadio.checked = true;
+            }
+            
+			// --- Update Log ---
+            const finalLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
+            const finalTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
+            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${localStorage.getItem(LOCAL_STORAGE_FONT_KEY) || 'Default'}', GOG='${gogIsEnabled}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}'`);
+
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
              alert("Error loading settings. Defaults may be applied.");
-             // Attempt to apply default theme as a fallback
              try { applyTheme('light'); } catch {}
+        } finally {
+             console.log("--- loadSettings END ---");
         }
     } // End loadSettings
 
-	    // --- NEW: Import/Export Functions ---
+	    // --- Import/Export Functions ---
 
     function formatColorsForExport() {
         let outputText = "# GameGet Custom Theme Export\n";
@@ -478,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         console.log("Export triggered.");
     }
 
-  function importCustomColors(event) {
+	function importCustomColors(event) {
         console.log("Import file selected...");
         const file = event.target.files[0];
         if (!file) {
@@ -560,10 +522,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         console.log("Reading file as text...");
         reader.readAsText(file); // Read the file as text
     } // End importCustomColors
-
-
-		// --- NEW: Import/Export Functions ---
-		
+	
     function parseImportedColors(textContent) {
         const colors = {};
         const lines = textContent.split('\n');
@@ -596,7 +555,6 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         });
         return colors;
     }
-
 
     // --- Platform Logo Mapping Helper Function ---
     function getLogoPathForPlatform(platformName) {
@@ -693,9 +651,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         return basePath + 'default.png';
     }
 
-
     // --- Core Search and Display Functions ---
-
     async function searchGamesList() {
         console.log("--- searchGamesList function CALLED ---"); // <<<--- DEBUG LOG
 
@@ -800,6 +756,12 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         resultsDiv.innerHTML = ''; // Clear previous results
 		obsButtonContainer.innerHTML = ''; // <-- Clear button container again just before adding
 		
+		// --- Re-apply platform logo size variable ---
+        // Ensures the variable is set before elements using it are created in this scope
+        const currentLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
+        document.documentElement.style.setProperty('--platform-logo-size', `${currentLogoSize}px`);
+        console.log(`displayGameDetails: Ensuring --platform-logo-size is ${currentLogoSize}px`);
+		
         const gameInfoDiv = document.createElement('div');
         gameInfoDiv.classList.add('game-info');
 
@@ -824,20 +786,20 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         detailsDiv.appendChild(platformsElement);
 
         // Platform List Creation (with local logos)
-        if (data.platforms && data.platforms.length > 0) {
+         if (data.platforms && data.platforms.length > 0) {
             const platformList = document.createElement('ul');
             data.platforms.forEach(platformName => {
-                const li = document.createElement('li');
-                li.classList.add('platform-item');
+                const li = document.createElement('li'); li.classList.add('platform-item');
                 const logoPath = getLogoPathForPlatform(platformName);
                 const logoImg = document.createElement('img');
                 logoImg.src = logoPath;
                 logoImg.alt = `${platformName} logo`;
                 logoImg.classList.add('platform-logo');
-                logoImg.width = 16; logoImg.height = 16;
-                logoImg.onerror = () => { logoImg.src = 'images/platforms/default.png'; logoImg.onerror = () => { logoImg.remove(); }; };
+                // No explicit width/height here, relies on CSS variable
+                logoImg.onerror = () => { /* ... */ };
                 li.appendChild(logoImg);
                 const platformNameSpan = document.createElement('span');
+                platformNameSpan.classList.add('platform-name-text'); // Class added
                 platformNameSpan.textContent = platformName;
                 li.appendChild(platformNameSpan);
                 platformList.appendChild(li);
@@ -892,23 +854,93 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         obsButtonContainer.appendChild(saveButton);
         // --- End Save Button ---
 		
-        // --- Conditionally Asynchronously check GOG store AFTER displaying base info ---
-        // Read the current preference from localStorage (defaulting to true/enabled)
-        const shouldCheckGog = localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === 'true');
-
-        if (shouldCheckGog) {
-            checkGogStore(data.name, storeLinksContainer); // Check store if enabled
-        } else {
-            console.log("GOG store check disabled by user setting.");
-            storeLinksContainer.innerHTML = ''; // Clear container if check is disabled
-        }
-        // --- End Conditional Check ---
-
+        // --- Always check GOG store ---
+        console.log("Initiating GOG store check (visibility controlled by CSS)...");
+        checkGogStore(data.name, storeLinksContainer); // Call unconditionally
+        // --- End GOG Check ---
+        
+		
+		// --- Apply Platform Text Visibility Class based on current setting --- 
+        const textIsVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
+        document.body.classList.toggle('platform-text-hidden', !textIsVisible);
+        // --- END ADD ---
+		
     } // End displayGameDetails
 
       
-      
-// --- UPDATED Function to Save HTML for OBS (Embeds Font Info) ---
+    /**
+     * NEW Function: Checks GOG store and adds button if found.
+     * @param {string} gameName - The name of the game to check.
+     * @param {HTMLElement} container - The container element to add the button to.
+     */
+    async function checkGogStore(gameName, container) {
+        console.log(`Checking GOG store for "${gameName}"...`);
+        container.innerHTML = `<p class="info-message store-loading">Checking GOG.com...</p>`; // Loading indicator
+
+        const gogCheckUrl = `${API_BASE_URL}/checkGog?gameName=${encodeURIComponent(gameName)}`;
+
+        try {
+            const response = await fetch(gogCheckUrl);
+            const result = await response.json(); // Expecting { found: boolean, url?: string, error?: string }
+
+            // Clear loading indicator
+            const loadingIndicator = container.querySelector('.store-loading');
+            if (loadingIndicator) loadingIndicator.remove();
+
+            if (response.ok && result.found && result.url) {
+                addStoreButton(container, 'GOG', result.url, 'images/gog_logo.png'); // Add button on success
+            } else {
+                console.log(`GOG check for "${gameName}" returned found: false or encountered an error.`);
+                // Optionally display "Not found on GOG" message or just leave container empty
+                 if (!response.ok) {
+                     console.error(`GOG check failed with status ${response.status}`, result.error || '');
+                 }
+            }
+
+        } catch (error) { // Catch fetch errors
+            console.error("Error during GOG store check fetch:", error);
+            const loadingIndicator = container.querySelector('.store-loading');
+            if (loadingIndicator) loadingIndicator.remove();
+            container.innerHTML = `<p class="error-message store-error">Could not check GOG.com.</p>`; // Error message
+        }
+    } // End checkGogStore
+
+    /**
+     * NEW Helper: Creates and adds a store button/link.
+     * @param {HTMLElement} container - The parent element.
+     * @param {string} storeName - e.g., "GOG".
+     * @param {string} url - The URL to the store page.
+     * @param {string} logoSrc - Path to the local store logo image.
+     */
+     function addStoreButton(container, storeName, url, logoSrc) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank'; // Open in new tab
+        link.rel = 'noopener noreferrer'; // Security best practice
+        link.classList.add('store-button', `${storeName.toLowerCase()}-button`);
+        link.title = `Buy on ${storeName}`;
+
+        // Add logo
+        const logo = document.createElement('img');
+        logo.src = logoSrc;
+        logo.alt = `${storeName} logo`;
+        logo.classList.add('store-logo');
+        logo.width = 16; logo.height = 16;
+        logo.onerror = () => { // Handle missing logo file
+            console.warn(`Failed to load store logo: ${logoSrc}`);
+            logo.remove();
+        };
+
+        // Add text
+        const text = document.createElement('span');
+        text.textContent = `Buy on ${storeName}`;
+
+        link.appendChild(logo);
+        link.appendChild(text);
+        container.appendChild(link); // Add the complete link to the container
+    } // End addStoreButton
+
+	// --- UPDATED Function to Save HTML for OBS (Embeds Font Info) ---
     async function saveResultsHtml(gameName) { // Function is async
         console.log(`Generating HTML for "${gameName}" with font embedding...`);
 
@@ -1029,83 +1061,9 @@ ${appliedVariables}
         console.log(`Download triggered for ${link.download}. Font info embedded.`);
     } // End saveResultsHtml
 
-
-
-    /**
-     * NEW Function: Checks GOG store and adds button if found.
-     * @param {string} gameName - The name of the game to check.
-     * @param {HTMLElement} container - The container element to add the button to.
-     */
-    async function checkGogStore(gameName, container) {
-        console.log(`Checking GOG store for "${gameName}"...`);
-        container.innerHTML = `<p class="info-message store-loading">Checking GOG.com...</p>`; // Loading indicator
-
-        const gogCheckUrl = `${API_BASE_URL}/checkGog?gameName=${encodeURIComponent(gameName)}`;
-
-        try {
-            const response = await fetch(gogCheckUrl);
-            const result = await response.json(); // Expecting { found: boolean, url?: string, error?: string }
-
-            // Clear loading indicator
-            const loadingIndicator = container.querySelector('.store-loading');
-            if (loadingIndicator) loadingIndicator.remove();
-
-            if (response.ok && result.found && result.url) {
-                addStoreButton(container, 'GOG', result.url, 'images/gog_logo.png'); // Add button on success
-            } else {
-                console.log(`GOG check for "${gameName}" returned found: false or encountered an error.`);
-                // Optionally display "Not found on GOG" message or just leave container empty
-                 if (!response.ok) {
-                     console.error(`GOG check failed with status ${response.status}`, result.error || '');
-                 }
-            }
-
-        } catch (error) { // Catch fetch errors
-            console.error("Error during GOG store check fetch:", error);
-            const loadingIndicator = container.querySelector('.store-loading');
-            if (loadingIndicator) loadingIndicator.remove();
-            container.innerHTML = `<p class="error-message store-error">Could not check GOG.com.</p>`; // Error message
-        }
-    } // End checkGogStore
-
-
-    /**
-     * NEW Helper: Creates and adds a store button/link.
-     * @param {HTMLElement} container - The parent element.
-     * @param {string} storeName - e.g., "GOG".
-     * @param {string} url - The URL to the store page.
-     * @param {string} logoSrc - Path to the local store logo image.
-     */
-     function addStoreButton(container, storeName, url, logoSrc) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank'; // Open in new tab
-        link.rel = 'noopener noreferrer'; // Security best practice
-        link.classList.add('store-button', `${storeName.toLowerCase()}-button`);
-        link.title = `Buy on ${storeName}`;
-
-        // Add logo
-        const logo = document.createElement('img');
-        logo.src = logoSrc;
-        logo.alt = `${storeName} logo`;
-        logo.classList.add('store-logo');
-        logo.width = 16; logo.height = 16;
-        logo.onerror = () => { // Handle missing logo file
-            console.warn(`Failed to load store logo: ${logoSrc}`);
-            logo.remove();
-        };
-
-        // Add text
-        const text = document.createElement('span');
-        text.textContent = `Buy on ${storeName}`;
-
-        link.appendChild(logo);
-        link.appendChild(text);
-        container.appendChild(link); // Add the complete link to the container
-    } // End addStoreButton
-
     // --- Initial Setup ---
     loadSettings(); // Load saved settings on page load
+	console.log("Initial setup complete.");
 
 }); // End DOMContentLoaded wrapper
     
