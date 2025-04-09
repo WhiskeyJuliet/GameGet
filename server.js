@@ -68,16 +68,16 @@ app.get('/search', async (req, res) => {
         const accessToken = await getTwitchAccessToken();
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
-        // Query: Search, get ID, Name, and First Release Date, limit to 20 results
+        // Query: Search, get ID, Name, and First Release Date, limit to 35 results
         const requestBody = `
             search "${gameQuery.replace(/"/g, '\\"')}";
             fields id, name, first_release_date;
-            limit 20; // <--- Increased limit to 20
+            limit 35; // <--- Increased limit to 35
         `;
            // where category = 0;
 
         // Update console log message
-        console.log(`Querying IGDB for top 20 list matching "${gameQuery}"...`);
+        console.log(`Querying IGDB for top 35 list matching "${gameQuery}"...`);
         const igdbResponse = await axios.post(igdbUrl, requestBody, {
             headers: {
                 'Client-ID': TWITCH_CLIENT_ID,
@@ -101,7 +101,7 @@ app.get('/search', async (req, res) => {
                 };
             });
 
-            console.log(`Found ${resultsWithYear.length} potential matches (sending top 20).`);
+            console.log(`Found ${resultsWithYear.length} potential matches (sending top 35).`);
             res.json(resultsWithYear);
         } else {
             console.log(`No results found on IGDB for "${gameQuery}".`);
@@ -141,11 +141,18 @@ app.get('/details/:gameId', async (req, res) => {
         const accessToken = await getTwitchAccessToken();
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
-        // Query: Get specific game by ID, fetch detailed fields INCLUDING platform logos
-const parsedGameId = parseInt(gameId);
-const requestBody = `fields name, first_release_date, cover.url, platforms.id, platforms.name; where id = ${parsedGameId}; limit 1;`; // Added platforms.id
-        
-        // --- End of Revised Request Body ---
+        // Query: Get specific game by ID, fetch detailed fields including platform logos and developer
+		const parsedGameId = parseInt(gameId);
+		const requestBody = `
+        fields
+            name,
+            first_release_date,
+            cover.url,
+            platforms.id, platforms.name,
+            involved_companies.id, involved_companies.company.name, involved_companies.developer;
+        where id = ${parsedGameId};
+        limit 1;
+    `;
 
         console.log(`Querying IGDB for details (incl. platform logos) of game ID ${parsedGameId}...`);
         // ... rest of the endpoint
@@ -167,6 +174,7 @@ const requestBody = `fields name, first_release_date, cover.url, platforms.id, p
                 name: game.name || 'N/A',
                 thumbnailUrl: null,
                 releaseDate: 'N/A',
+				developer: 'N/A', 
                 platforms: [] // Initialize as an empty array
             };
 
@@ -186,11 +194,24 @@ const requestBody = `fields name, first_release_date, cover.url, platforms.id, p
                 });
             }
 
+			// --- Map Developer ---
+            if (game.involved_companies && Array.isArray(game.involved_companies)) {
+                // Find the first company marked as the developer
+                const devCompany = game.involved_companies.find(ic => ic.developer === true && ic.company && ic.company.name);
+                if (devCompany) {
+                    gameData.developer = devCompany.company.name;
+                    console.log(`Found Developer: ${gameData.developer}`);
+                } else {
+                     console.log("No company marked as developer found.");
+                     // Optional: Could look for publisher or first company as fallback? For now, N/A is fine.
+                }
+            }
+
             // --- Platform Mapping (Updated) ---
             if (game.platforms && Array.isArray(game.platforms)) {
                 gameData.platforms = game.platforms
-    .map(p => (p && typeof p.name === 'string') ? p.name : null) // Get name only if p and p.name exist and are string
-    .filter(Boolean); // Filter out nulls
+					.map(p => (p && typeof p.name === 'string') ? p.name : null) // Get name only if p and p.name exist and are string
+					.filter(Boolean); // Filter out nulls
             }
             // --- End of Platform Mapping ---
 

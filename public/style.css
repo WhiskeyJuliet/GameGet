@@ -354,7 +354,7 @@ a:hover {
 
 .game-details h2 {
     margin-top: 0;
-    margin-bottom: 12px;
+    margin-bottom: 5px;
     color: var(--text-color);
     font-size: 1.5rem;
     font-weight: 600;
@@ -366,6 +366,19 @@ a:hover {
     color: var(--text-color);
 }
 
+/* Style for Release Date (adjust margin if needed) */
+.game-details p:has(> strong:contains("Release Date")) {
+     margin-top: 0;
+     margin-bottom: 12px;
+}
+
+/* Style for Platforms Label */
+.game-details p:has(> strong:contains("Platforms")) {
+     margin-top: 0;
+     margin-bottom: 8px;
+}
+
+
 .game-details strong {
     color: var(--text-color); /* Ensure strong text matches main text */
     font-weight: 600;
@@ -375,7 +388,7 @@ a:hover {
 .game-details ul {
     list-style: none;
     padding: 0;
-    margin: 10px 0 0 0;
+    margin: 0 0 0 0;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -393,11 +406,25 @@ a:hover {
     gap: 10px; /* Spacing between platform items */
 }
 
+/* Style for Developer */
+.game-developer {
+    font-size: 1.1em !important;
+    color: var(--text-muted);
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 12px; /* Space below developer */
+    font-style: italic;
+}
+.game-developer strong {
+    color: var(--text-muted);
+    font-style: normal;
+    font-weight: 600;
+}
+
 /* Style for EACH platform list item (<li>) */
 .platform-item {
     background-color: var(--accent-color);
     color: var(--text-muted);
-    padding: 5px 10px; /* Adjust padding as needed */
+    padding: 8px 15px 0 0; /* Adjust padding as needed */
     border-radius: 15px; /* Adjust for desired shape */
     font-size: 0.85em;
     line-height: 1.4;

@@ -773,17 +773,23 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         const detailsDiv = document.createElement('div'); // Container for text details
         detailsDiv.classList.add('game-details');
 
-        const nameElement = document.createElement('h2'); // Name
+        const nameElement = document.createElement('h2'); // Game Name H2
         nameElement.textContent = data.name;
         detailsDiv.appendChild(nameElement);
 
+		const developerElement = document.createElement('p');
+        developerElement.classList.add('game-developer'); // Add class for potential styling
+        // Use the developer data received from backend (defaults to 'N/A' if not found)
+        developerElement.innerHTML = `<strong>${data.developer || 'Unknown'}</strong>`;
+        detailsDiv.appendChild(developerElement);
+
         const releaseElement = document.createElement('p'); // Release Date
-        releaseElement.innerHTML = `<strong>Release Date:</strong> ${data.releaseDate || 'N/A'}`;
+        releaseElement.innerHTML = `<strong>${data.releaseDate || 'N/A'}</strong>`;
         detailsDiv.appendChild(releaseElement);
 
-        const platformsElement = document.createElement('p'); // Platforms Header
-        platformsElement.innerHTML = '<strong>Platforms:</strong>';
-        detailsDiv.appendChild(platformsElement);
+        //const platformsElement = document.createElement('p'); // Platforms Header
+        //platformsElement.innerHTML = '<strong>Platforms:</strong>';
+        //detailsDiv.appendChild(platformsElement);
 
         // Platform List Creation (with local logos)
          if (data.platforms && data.platforms.length > 0) {
