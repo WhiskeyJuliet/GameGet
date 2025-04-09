@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const gameInput = document.getElementById('gameInput');
     const searchButton = document.getElementById('searchButton'); // Make sure this finds the button
     const resultsDiv = document.getElementById('results');
+    const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
 
     // Settings Elements
     const settingsCog = document.getElementById('settings-cog');
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const exportButton = document.getElementById('export-colors-button'); // Import, Export and file dialogue
     const importButton = document.getElementById('import-colors-button');
     const importFileInput = document.getElementById('import-file-input');
+	
 	
 
     const API_BASE_URL = 'http://localhost:3000';
@@ -51,7 +53,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	if (!exportButton || !importButton || !importFileInput) { console.error("CRITICAL ERROR: Import/Export elements not found!");
 		return;
 	}
-	
+	if (!obsButtonContainer) { console.error("CRITICAL ERROR: OBS Button Container not found!");
+		return;
+	}
     // Add similar checks for settings elements if needed
 
 
@@ -689,6 +693,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         return basePath + 'default.png';
     }
 
+
     // --- Core Search and Display Functions ---
 
     async function searchGamesList() {
@@ -703,6 +708,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         console.log(`searchGamesList: Searching for "${gameName}"`);
 
         resultsDiv.innerHTML = '<p class="info-message loading">Searching IGDB...</p>';
+		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container on new search
         searchButton.disabled = true;
 
         try {
@@ -735,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
     function displaySearchResultsList(results) {
         resultsDiv.innerHTML = '';
+		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container when showing list
         const instruction = document.createElement('p');
         instruction.classList.add('info-message');
         instruction.textContent = 'Select a game to view details:';
@@ -763,6 +770,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
     async function fetchGameDetails(gameId) {
         resultsDiv.innerHTML = '<p class="info-message loading">Loading details...</p>';
+		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container while loading details
         searchButton.disabled = true;
         try {
             const response = await fetch(`${API_BASE_URL}/details/${gameId}`);
@@ -790,7 +798,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
              return;
         }
         resultsDiv.innerHTML = ''; // Clear previous results
-
+		obsButtonContainer.innerHTML = ''; // <-- Clear button container again just before adding
+		
         const gameInfoDiv = document.createElement('div');
         gameInfoDiv.classList.add('game-info');
 
@@ -850,7 +859,39 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         gameInfoDiv.appendChild(detailsDiv);
         resultsDiv.appendChild(gameInfoDiv); // Add main info to the page
 
-        
+        // --- Create and Add "Save for OBS" Button to its own container ---
+        const saveButton = document.createElement('button');
+        saveButton.id = 'save-obs-button';
+        saveButton.type = 'button';
+		
+        // ... (create saveIcon, saveText) ...
+		const saveIcon = document.createElement('img');
+        saveIcon.src = 'images/floppy.png'; // Verify this path is correct relative to index.html
+        saveIcon.alt = 'Save Icon';
+        // Size is controlled by CSS, but setting here helps layout consistency
+        saveIcon.width = 24;
+        saveIcon.height = 24;
+        saveIcon.onerror = () => { // Handle if button icon fails to load
+             console.error("Failed to load OBS save button icon: images/GameGet_Logo.png");
+             saveIcon.remove(); // Remove broken image
+        };
+
+        const saveText = document.createElement('span');
+        saveText.textContent = 'Save HTML for OBS'; // Verify text content
+		
+         // --- Append BOTH icon and text to the button ---
+        saveButton.appendChild(saveIcon);
+        saveButton.appendChild(saveText);
+        // --- End Append ---
+
+        // Add click listener
+        saveButton.addEventListener('click', () => {
+            saveResultsHtml(data.name); // Pass the game name for the filename
+        });
+        // --- Append button to the DEDICATED container ---
+        obsButtonContainer.appendChild(saveButton);
+        // --- End Save Button ---
+		
         // --- Conditionally Asynchronously check GOG store AFTER displaying base info ---
         // Read the current preference from localStorage (defaulting to true/enabled)
         const shouldCheckGog = localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === 'true');
@@ -864,6 +905,130 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         // --- End Conditional Check ---
 
     } // End displayGameDetails
+
+      
+      
+// --- UPDATED Function to Save HTML for OBS (Embeds Font Info) ---
+    async function saveResultsHtml(gameName) { // Function is async
+        console.log(`Generating HTML for "${gameName}" with font embedding...`);
+
+        // --- Step 1: Clone results content and adjust image paths ---
+        const resultsClone = resultsDiv.cloneNode(true);
+        const imagesToAdjust = resultsClone.querySelectorAll('img');
+        imagesToAdjust.forEach(img => {
+            const currentSrc = img.getAttribute('src');
+            if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) {
+                img.src = '../' + currentSrc; // Adjust for saving in results/ subdir
+            }
+        });
+        const buttonInClone = resultsClone.querySelector('#save-obs-button');
+        if (buttonInClone) buttonInClone.remove();
+        const resultsContent = resultsClone.innerHTML;
+
+        // --- Step 2: Get current theme ---
+        const currentTheme = document.body.dataset.theme || 'light';
+
+        // --- Step 3: Fetch and process style.css ---
+        let processedCss = "/* Styles could not be loaded */"; // Fallback
+        try {
+            console.log("Fetching style.css for embedding...");
+            const cssResponse = await fetch('style.css');
+            if (cssResponse.ok) {
+                let cssText = await cssResponse.text();
+                console.log("Successfully fetched style.css.");
+
+                // --- Step 3a: Adjust local font path within the CSS text ---
+                const localFontFamily = 'pxSans'; // YOUR font-family name
+                const localFontFilename = 'pxSans.woff'; // YOUR .woff filename
+
+                // UPDATED Regex: Matches src: url( , optional quotes, /fonts/, filename, optional quotes, )
+                // Captures the part BEFORE /fonts/ (group 1) and AFTER filename (group 3)
+                const fontPathRegex = new RegExp(`(src:\\s*url\\(['"]?)\\/fonts\\/${localFontFilename}(['"]?\\))`, 'i');
+
+                if (cssText.includes(`font-family: '${localFontFamily}'`) || cssText.includes(`font-family: ${localFontFamily}`)) {
+                    // UPDATED Replacement: Uses group 1, adds ../fonts/filename, uses group 3
+                    cssText = cssText.replace(fontPathRegex, `$1../fonts/${localFontFilename}$2`);
+                    console.log(`Adjusted local font path in embedded CSS for ${localFontFamily}.`);
+                } else {
+                    console.log(`Local font ${localFontFamily} @font-face not found in CSS, skipping path adjustment.`);
+                }
+                processedCss = cssText;
+
+            } else {
+                console.error(`Failed to fetch style.css: ${cssResponse.status}`);
+            }
+        } catch (error) {
+            console.error("Error fetching or processing style.css:", error);
+        }
+
+        // --- Step 4: Get current applied variable values ---
+        let appliedVariables = "";
+        const varNames = [ // Include font variable
+             '--bg-color', '--element-bg', '--text-color', '--text-muted',
+             '--border-color', '--border-light', '--primary-color', '--primary-hover',
+             '--accent-color', '--accent-darker', '--error-color', '--body-font'
+        ];
+        const computedStyle = getComputedStyle(document.body);
+        varNames.forEach(varName => {
+             const value = computedStyle.getPropertyValue(varName).trim();
+             if (value) { appliedVariables += `    ${varName}: ${value};\n`; }
+        });
+
+        // --- Step 5: Get the Google Font Link from the main page ---
+        // Find the link element used for Google Fonts in the current document
+        // IMPORTANT: Adjust selector if your Google Font link has a specific ID or attribute
+        const googleFontLinkElement = document.querySelector("link[href^='https://fonts.googleapis.com']");
+        const googleFontLinkTag = googleFontLinkElement ? googleFontLinkElement.outerHTML : '<!-- Google Font link not found -->';
+        console.log("Including Google Font Tag:", googleFontLinkTag);
+
+
+        // --- Step 6: Construct the full HTML structure ---
+        const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGet Result - ${gameName}</title>
+    <!-- Include Google Font Link -->
+    ${googleFontLinkTag}
+    <style>
+        /* --- Embedded Main Styles (with adjusted local font path) --- */
+        ${processedCss}
+
+        /* --- Applied Theme/Custom Variables --- */
+        body {
+${appliedVariables}
+        }
+
+        /* --- OBS Specific Overrides --- */
+        body { margin: 0; padding: 0; }
+        #results { border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        #results button { display: none !important; }
+    </style>
+</head>
+<body data-theme="${currentTheme}">
+    <!-- Results div content with adjusted image paths -->
+    <div id="results">
+        ${resultsContent}
+    </div>
+</body>
+</html>`;
+
+        // --- Step 7: Create Blob and Download Link ---
+        const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
+        link.download = `${safeGameName}_GameGet.html`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        console.log(`Download triggered for ${link.download}. Font info embedded.`);
+    } // End saveResultsHtml
+
 
 
     /**

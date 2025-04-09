@@ -1,7 +1,17 @@
-/* === Define Local Font === */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGet Result - Crystal Caves</title>
+    <!-- Include Google Font Link -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>
+        /* --- Embedded Main Styles (with adjusted local font path) --- */
+        /* === Define Local Font === */
 @font-face {
   font-family: 'pxSans'; /* Choose a name for your font */
-  src: url('/fonts/pxSans.woff') format('woff'); /* Path relative to the public root */
+  src: url('../fonts/pxSans.woff') format('woff'); /* Path relative to the public root */
   /* Optional: Specify weight/style if the file is specific */
   /* font-weight: normal; */
   /* font-style: normal; */
@@ -737,3 +747,35 @@ a:hover {
 	margin-right: 8px;
     box-shadow: 0 4px 6px var(--shadow-color);
 }
+
+
+        /* --- Applied Theme/Custom Variables --- */
+        body {
+    --bg-color: #45283c;
+    --element-bg: #45283c;
+    --text-color: #ffffff;
+    --text-muted: #ffffff;
+    --border-color: #cbdbfc;
+    --border-light: #45283c;
+    --primary-color: #7d165c;
+    --primary-hover: #9b1c72;
+    --accent-color: #45283c;
+    --accent-darker: #7d165c;
+    --error-color: #dc3545;
+    --body-font: 'pxSans', sans-serif;
+
+        }
+
+        /* --- OBS Specific Overrides --- */
+        body { margin: 0; padding: 0; }
+        #results { border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        #results button { display: none !important; }
+    </style>
+</head>
+<body data-theme="custom">
+    <!-- Results div content with adjusted image paths -->
+    <div id="results">
+        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co2ptx.jpg" alt="Crystal Caves Box Art"><div class="game-details"><h2>Crystal Caves</h2><p><strong>Release Date:</strong> 23 October 1991</p><p><strong>Platforms:</strong></p><ul><li class="platform-item"><img src="../images/platforms/linux.png" alt="Linux logo" class="platform-logo" width="16" height="16"><span>Linux</span></li><li class="platform-item"><img src="../images/platforms/windows.png" alt="PC (Microsoft Windows) logo" class="platform-logo" width="16" height="16"><span>PC (Microsoft Windows)</span></li><li class="platform-item"><img src="../images/platforms/mac.png" alt="Mac logo" class="platform-logo" width="16" height="16"><span>Mac</span></li><li class="platform-item"><img src="../images/platforms/dos.png" alt="DOS logo" class="platform-logo" width="16" height="16"><span>DOS</span></li></ul><div class="store-links-container"></div></div></div>
+    </div>
+</body>
+</html>
