@@ -16,11 +16,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const customColorInputs = customColorEditor.querySelectorAll('input[type="color"]');
     const customHexInputs = customColorEditor.querySelectorAll('input.hex-input');
     const resetCustomColorsButton = document.getElementById('reset-custom-colors');
+	const gogToggleGroup = document.getElementById('gog-toggle-group');
+	
 
     const API_BASE_URL = 'http://localhost:3000';
     const LOCAL_STORAGE_THEME_KEY = 'selectedTheme';
     const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
     const LOCAL_STORAGE_CUSTOM_COLORS_KEY = 'customThemeColors';
+	const LOCAL_STORAGE_GOG_KEY = 'gogButtonEnabled';
 
 
     // --- Verify crucial elements exist ---
@@ -39,6 +42,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
          alert("Initialization Error: Results area missing. App may not function.");
          return;
     }
+	if (!gogToggleGroup) { console.error("CRITICAL ERROR: GOG Toggle Group not found!");
+		return;
+	}
+	
     // Add similar checks for settings elements if needed
 
 
@@ -69,6 +76,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
     // Font Change Listener
     fontSelector.addEventListener('change', (event) => applyFont(event.target.value));
+	
+	 // GOG Toggle Listener
+    gogToggleGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+            // Pass true if 'on' is selected, false otherwise
+            applyGogToggle(event.target.value === 'on');
+        }
+    });
 
     // Custom Color Input Listeners
     customColorInputs.forEach(picker => {
@@ -317,7 +332,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 
-    function loadSettings() {
+     function applyGogToggle(isEnabled) { // <-- Add Function
+        console.log("Setting GOG button visibility preference:", isEnabled);
+        localStorage.setItem(LOCAL_STORAGE_GOG_KEY, isEnabled ? 'true' : 'false'); // Save preference
+        // Note: We don't need to immediately hide/show anything here,
+        // the check happens when details are displayed.
+    }
+	
+	function loadSettings() {
         try { // Wrap entire function for safety
             const savedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
             const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
@@ -358,6 +380,21 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                      localStorage.removeItem(LOCAL_STORAGE_FONT_KEY);
                  }
             }
+
+			
+            // --- Load GOG Toggle State --- // <-- Add This Section
+            const savedGogEnabled = localStorage.getItem(LOCAL_STORAGE_GOG_KEY);
+            // Default to 'true' (enabled) if no setting is saved yet
+            const gogIsEnabled = savedGogEnabled === null ? true : (savedGogEnabled === 'true');
+            const valueToSelect = gogIsEnabled ? 'on' : 'off';
+            const currentGogRadio = gogToggleGroup.querySelector(`input[name="gogToggle"][value="${valueToSelect}"]`);
+            if (currentGogRadio) {
+                currentGogRadio.checked = true;
+            } else { // Fallback if somehow radios are missing/changed
+                 const defaultGogRadio = gogToggleGroup.querySelector('input[name="gogToggle"][value="on"]');
+                 if (defaultGogRadio) defaultGogRadio.checked = true;
+            }
+            // --- End GOG Toggle Load ---
 
             console.log(`Loaded settings: Theme='${themeToApply}', Font='${savedFont || 'Default'}'`);
         } catch (e) {
@@ -625,8 +662,18 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         gameInfoDiv.appendChild(detailsDiv);
         resultsDiv.appendChild(gameInfoDiv); // Add main info to the page
 
-        // --- Asynchronously check GOG store AFTER displaying base info ---
-        checkGogStore(data.name, storeLinksContainer); // Pass name and container
+        
+        // --- Conditionally Asynchronously check GOG store AFTER displaying base info ---
+        // Read the current preference from localStorage (defaulting to true/enabled)
+        const shouldCheckGog = localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === 'true');
+
+        if (shouldCheckGog) {
+            checkGogStore(data.name, storeLinksContainer); // Check store if enabled
+        } else {
+            console.log("GOG store check disabled by user setting.");
+            storeLinksContainer.innerHTML = ''; // Clear container if check is disabled
+        }
+        // --- End Conditional Check ---
 
     } // End displayGameDetails
 
