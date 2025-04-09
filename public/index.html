@@ -109,7 +109,17 @@
 
              </div>
              <button id="reset-custom-colors" type="button">Reset to Theme Defaults</button>
+			 
+			 <!-- NEW: Import/Export Buttons -->
+             <div class="import-export-buttons">
+                 <button id="export-colors-button" type="button">Export</button>
+                 <button id="import-colors-button" type="button">Import</button>
+                 <!-- Hidden file input for import -->
+                 <input type="file" id="import-file-input" accept=".txt,.theme" style="display: none;">
+             </div>
+             <!-- End Import/Export Buttons -->
         </fieldset>
+		<!-- End Custom Color Editor -->
 
         <!-- Font Selection -->
         <fieldset class="settings-group">
@@ -125,7 +135,7 @@
             </select>
         </fieldset>
 		
-		<!-- NEW: GOG Button Toggle -->
+		<!-- GOG Button Toggle -->
         <fieldset class="settings-group">
             <legend>GOG Button</legend>
             <div class="radio-group" id="gog-toggle-group"> <!-- Add ID -->

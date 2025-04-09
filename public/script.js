@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const customHexInputs = customColorEditor.querySelectorAll('input.hex-input');
     const resetCustomColorsButton = document.getElementById('reset-custom-colors');
 	const gogToggleGroup = document.getElementById('gog-toggle-group');
+	const exportButton = document.getElementById('export-colors-button'); // Import, Export and file dialogue
+    const importButton = document.getElementById('import-colors-button');
+    const importFileInput = document.getElementById('import-file-input');
 	
 
     const API_BASE_URL = 'http://localhost:3000';
@@ -43,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
          return;
     }
 	if (!gogToggleGroup) { console.error("CRITICAL ERROR: GOG Toggle Group not found!");
+		return;
+	}
+	if (!exportButton || !importButton || !importFileInput) { console.error("CRITICAL ERROR: Import/Export elements not found!");
 		return;
 	}
 	
@@ -94,8 +100,17 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         hexInput.addEventListener('change', handleHexInputChange);
     });
     resetCustomColorsButton.addEventListener('click', resetCustomColorsToThemeDefaults);
+	
+    // Import, Export and File Selector Listeners
+	exportButton.addEventListener('click', exportCustomColors);
+    importButton.addEventListener('click', () => importFileInput.click());
+    importFileInput.addEventListener('change', importCustomColors);
 
 
+
+
+	// --- Settings Functions ---
+	
     // --- Helper: Sync Color Picker and Hex Input ---
     function syncColorInputs(variableName, newValue) {
         try { // Add try-catch for robustness
@@ -161,12 +176,35 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         try {
             const customColors = {};
             customColorInputs.forEach(picker => {
-                if(picker.dataset.varname) { // Ensure varname exists
+                if(picker.dataset.varname) {
                    customColors[picker.dataset.varname] = picker.value;
                 }
             });
+            // <<< ADD LOG HERE >>>
+            console.log("--- Saving Custom Colors ---");
+            console.log("Values read from inputs:", JSON.stringify(customColors, null, 2));
+            // <<< END ADD LOG >>>
             localStorage.setItem(LOCAL_STORAGE_CUSTOM_COLORS_KEY, JSON.stringify(customColors));
-            console.log("Saved custom colors:", customColors);
+            // console.log("Saved custom colors:", customColors); // Original log
+        } catch (e) {
+            console.error("Error saving custom colors to localStorage:", e);
+        }
+    }
+
+	function saveCustomColors() {
+        try {
+            const customColors = {};
+            customColorInputs.forEach(picker => {
+                if(picker.dataset.varname) {
+                   customColors[picker.dataset.varname] = picker.value;
+                }
+            });
+            // <<< ADD LOG HERE >>>
+            console.log("--- Saving Custom Colors ---");
+            console.log("Values read from inputs:", JSON.stringify(customColors, null, 2));
+            // <<< END ADD LOG >>>
+            localStorage.setItem(LOCAL_STORAGE_CUSTOM_COLORS_KEY, JSON.stringify(customColors));
+            // console.log("Saved custom colors:", customColors); // Original log
         } catch (e) {
             console.error("Error saving custom colors to localStorage:", e);
         }
@@ -382,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             }
 
 			
-            // --- Load GOG Toggle State --- // <-- Add This Section
+            // --- Load GOG Toggle State ---
             const savedGogEnabled = localStorage.getItem(LOCAL_STORAGE_GOG_KEY);
             // Default to 'true' (enabled) if no setting is saved yet
             const gogIsEnabled = savedGogEnabled === null ? true : (savedGogEnabled === 'true');
@@ -404,6 +442,156 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
              try { applyTheme('light'); } catch {}
         }
     } // End loadSettings
+
+	    // --- NEW: Import/Export Functions ---
+
+    function formatColorsForExport() {
+        let outputText = "# GameGet Custom Theme Export\n";
+        outputText += `# Saved: ${new Date().toISOString()}\n\n`;
+        customColorInputs.forEach(picker => {
+            const varName = picker.dataset.varname;
+            const value = picker.value;
+            if (varName) {
+                outputText += `${varName} = ${value}\n`;
+            }
+        });
+        return outputText;
+    }
+
+    function exportCustomColors() {
+        console.log("Exporting custom colors...");
+        const formattedText = formatColorsForExport();
+        const blob = new Blob([formattedText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'gameget-custom-theme.txt'; // Filename for download
+        document.body.appendChild(link); // Required for Firefox
+        link.click();
+        document.body.removeChild(link); // Clean up
+        URL.revokeObjectURL(url); // Release object URL
+        console.log("Export triggered.");
+    }
+
+  function importCustomColors(event) {
+        console.log("Import file selected...");
+        const file = event.target.files[0];
+        if (!file) {
+            console.log("No file selected for import.");
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const content = e.target.result;
+            console.log("--- Import File Read ---");
+            console.log("Raw Content Snippet:", content.substring(0, 200)); // Log beginning of file content
+
+            try {
+                // Step 1: Parse
+                console.log("Parsing imported colors...");
+                const importedColors = parseImportedColors(content);
+                console.log("Parsed colors object:", JSON.stringify(importedColors, null, 2)); // Log the parsed object
+
+                if (Object.keys(importedColors).length === 0) {
+                    throw new Error("No valid color variables found in the file.");
+                }
+
+                // Step 2: Apply Colors
+                console.log("Applying parsed colors to styles and inputs...");
+                Object.entries(importedColors).forEach(([varName, value]) => {
+                    console.log(` -> Processing ${varName} = ${value}`);
+                    // Apply directly to body style
+                    updateCustomColor(varName, value);
+                    // Update the corresponding input fields (picker and hex)
+                    syncColorInputs(varName, value);
+                });
+                console.log("Finished applying/syncing inputs.");
+
+
+                // Step 3: Set theme attribute & save theme preference
+                console.log("Setting theme to 'custom' and ensuring editor is visible...");
+                document.body.dataset.theme = 'custom';
+                localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'custom');
+                if (customColorEditor) { // Ensure editor exists
+                    customColorEditor.style.display = 'block';
+                } else {
+                     console.error("Custom color editor element not found!");
+                }
+
+                // Step 4: Save the NEW colors to storage
+                console.log("Attempting to save the newly applied custom colors...");
+                saveCustomColors(); // saveCustomColors reads from the input elements
+
+                // Step 5: Check the radio button
+                console.log("Setting 'custom' theme radio button checked state...");
+                const customRadio = themeRadioGroup.querySelector('input[name="theme"][value="custom"]');
+                if (customRadio) {
+                    customRadio.checked = true;
+                } else {
+                    console.error("Cannot find custom theme radio button.");
+                }
+
+                alert("Custom theme imported successfully!");
+                console.log("--- Import Process Complete ---");
+
+            } catch (error) {
+                console.error("Error processing imported file:", error);
+                alert(`Import failed: ${error.message}`);
+            } finally {
+                 // Reset file input value so the same file can be loaded again if needed
+                 console.log("Resetting file input value.");
+                 event.target.value = null;
+            }
+        };
+
+        reader.onerror = (e) => {
+             console.error("Error reading file:", e);
+             alert("Error reading the selected file.");
+             event.target.value = null; // Reset input
+        };
+
+        console.log("Reading file as text...");
+        reader.readAsText(file); // Read the file as text
+    } // End importCustomColors
+
+
+		// --- NEW: Import/Export Functions ---
+		
+    function parseImportedColors(textContent) {
+        const colors = {};
+        const lines = textContent.split('\n');
+        const hexRegex = /^#[0-9A-F]{6}$/i; // Regex for #RRGGBB format
+
+        lines.forEach(line => {
+            line = line.trim();
+            // Ignore comments and empty lines
+            if (line.startsWith('#') || line === '') {
+                return;
+            }
+
+            const parts = line.split('=');
+            if (parts.length === 2) {
+                const varName = parts[0].trim();
+                const value = parts[1].trim().toLowerCase(); // Ensure lowercase hex
+
+                // Validate variable name looks like a CSS var and value is a valid hex
+                if (varName.startsWith('--') && hexRegex.test(value)) {
+                    // Check if this variable name exists in our inputs
+                    if (customColorEditor.querySelector(`[data-varname="${varName}"]`)) {
+                         colors[varName] = value;
+                    } else {
+                         console.warn(`Ignoring unknown variable from import file: ${varName}`);
+                    }
+                } else {
+                    console.warn(`Ignoring invalid line in import file: "${line}"`);
+                }
+            }
+        });
+        return colors;
+    }
 
 
     // --- Platform Logo Mapping Helper Function ---
