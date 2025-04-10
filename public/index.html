@@ -121,29 +121,39 @@
         </fieldset>
 		<!-- End Custom Color Editor -->
 
-        <!-- Font Selection -->
-        <fieldset class="settings-group">
-            <legend>Font</legend>
-            <select id="font-selector" name="font">
-				<option value="'pxSans', sans-serif">pxSans</option>
-				<option value="'Tiny5', sans-serif">Tiny5</option>
-                <option value="'Roboto', sans-serif">Roboto</option>
-                <option value="'Open Sans', sans-serif">Open Sans</option>
-                <option value="'Lato', sans-serif">Lato</option>
-                <option value="'Source Sans 3', sans-serif">Source Sans 3</option>
-                <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'">System Default</option>
-            </select>
-        </fieldset>
+              
+		<!-- Font Selection -->
+		<fieldset class="settings-group">
+			<legend>Font</legend>
+				<div class="font-control-row"> <!-- Wrap select and button -->
+					<select id="font-selector" name="font">
+					<!-- Dynamic Local Fonts Will Be Added Here -->
+						<option value="'Tiny5', sans-serif">Tiny5</option>
+						<option value="'Roboto', sans-serif">Roboto</option>
+						<option value="'Open Sans', sans-serif">Open Sans</option>
+						<option value="'Lato', sans-serif">Lato</option>
+						<option value="'Source Sans 3', sans-serif">Source Sans 3</option>
+						<option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'">System Default</option>
+					<!-- REMOVE hardcoded local font options like pxSans -->
+					</select>
+					<button type="button" id="refresh-fonts-button" title="Reload local fonts from fonts.json">🔄</button> <!-- Refresh Button -->
+				</div>
+		</fieldset>
+
+    
 		
-		<!-- GOG Button Toggle -->
+		      
+		<!-- Store Links Toggle -->
         <fieldset class="settings-group">
-            <legend>GOG Button</legend>
-            <div class="radio-group" id="gog-toggle-group"> <!-- Add ID -->
-                <label><input type="radio" name="gogToggle" value="on" checked> Show</label> <!-- Default to On -->
-                <label><input type="radio" name="gogToggle" value="off"> Hide</label>
+            <legend>Store Links</legend> <!-- Changed Legend -->
+            <div class="radio-group" id="store-links-toggle-group"> <!-- Changed ID -->
+                <label><input type="radio" name="storeLinksToggle" value="on" checked> Show</label> <!-- Changed Name -->
+                <label><input type="radio" name="storeLinksToggle" value="off"> Hide</label> <!-- Changed Name -->
             </div>
         </fieldset>
-        <!-- End GOG Button Toggle -->
+        <!-- End Store Links Toggle -->
+
+    
 		
 		 <!-- NEW: Platform Display Settings -->
         <fieldset class="settings-group">

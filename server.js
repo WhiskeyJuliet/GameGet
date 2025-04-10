@@ -4,6 +4,8 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
+const http = require('http'); // Or https if needed
+const fs = require('fs');
 
 // Assuming you are NOT using HTTPS locally based on previous decision
 // const https = require('https');
@@ -195,7 +197,8 @@ app.get('/details/:gameId', async (req, res) => {
             first_release_date,
             cover.url,
             platforms.id, platforms.name,
-            involved_companies.id, involved_companies.company.name, involved_companies.developer;
+            involved_companies.id, involved_companies.company.name, involved_companies.developer,
+			websites.url, websites.category;
         where id = ${parsedGameId};
         limit 1;
     `;
@@ -221,7 +224,8 @@ app.get('/details/:gameId', async (req, res) => {
                 thumbnailUrl: null,
                 releaseDate: 'N/A',
 				developer: 'N/A', 
-                platforms: [] // Initialize as an empty array
+                platforms: [], // Initialize as an empty array
+				igdbStoreLinks: []
             };
 
             // --- Cover URL Mapping (remains the same) ---
@@ -260,6 +264,37 @@ app.get('/details/:gameId', async (req, res) => {
 					.filter(Boolean); // Filter out nulls
             }
             // --- End of Platform Mapping ---
+			
+			// --- Map Steam/Epic Links from IGDB Websites ---
+            if (game.websites && Array.isArray(game.websites)) {
+                game.websites.forEach(site => {
+                    let storeName = null;
+                    // ONLY check for Steam and Epic here
+                    switch (site.category) {
+                        case 13: storeName = 'Steam'; break;
+                        case 16: storeName = 'Epic Games'; break;
+                    }
+
+                    if (storeName && site.url) {
+                        // Basic validation
+                         const urlLower = site.url.toLowerCase();
+                         let isValidStoreUrl = false;
+                         if (storeName === 'Steam' && urlLower.includes('store.steampowered.com/app/')) isValidStoreUrl = true;
+                         else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValidStoreUrl = true;
+
+                         if (isValidStoreUrl) {
+                            gameData.igdbStoreLinks.push({ // Use specific array name
+                                name: storeName,
+                                url: site.url
+                            });
+                            console.log(`Found IGDB ${storeName} link: ${site.url}`);
+                         } else {
+                             console.log(`Skipping potential IGDB ${storeName} link (URL format mismatch): ${site.url}`);
+                         }
+                    }
+                });
+            }
+            // --- End Map Steam/Epic Links ---
 
             console.log("Mapped Game Details:", gameData);
             res.json(gameData); // Send data structure: { ..., platforms: [{name: '...', logoUrl: '...'}, ...]}
@@ -285,7 +320,7 @@ app.get('/details/:gameId', async (req, res) => {
     }
 });
 
-// --- NEW: Endpoint to check GOG ---
+// --- Endpoint to check GOG ---
 app.get('/checkGog', async (req, res) => {
     const gameName = req.query.gameName;
     if (!gameName) {

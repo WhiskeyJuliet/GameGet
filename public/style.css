@@ -1,12 +1,3 @@
-/* === Define Local Font === */
-@font-face {
-  font-family: 'pxSans'; /* Choose a name for your font */
-  src: url('/fonts/pxSans.woff') format('woff'); /* Path relative to the public root */
-  /* Optional: Specify weight/style if the file is specific */
-  /* font-weight: normal; */
-  /* font-style: normal; */
-}
-
 /* === CSS Variables (Defaults - Light Theme) === */
 :root {
     /* Color Palette */
@@ -108,7 +99,7 @@ h1 {
 
 h2 { /* Added for settings panel */
     margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
     font-weight: 600;
     color: var(--text-color);
 }
@@ -439,15 +430,14 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 
 .game-details h2 {
     margin-top: 0;
-    margin-bottom: 5px;
+    margin-bottom: 0;
     color: var(--text-color);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
 }
 
 .game-details p {
-    margin: 8px 0;
-    font-size: 1rem;
+    /*margin: 8px 0;*/
     color: var(--text-color);
 }
 
@@ -467,6 +457,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 .game-details strong {
     color: var(--text-muted); /* Ensure strong text matches main text */
     font-weight: 600;
+	font-size: 1.25rem;
 }
 
 /* Platform Tags Styling */
@@ -493,13 +484,14 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 
 /* Style for Developer */
 .game-developer {
-    font-size: 1.1em !important;
+    font-size: 1.5em !important;
     color: var(--text-muted);
     margin-top: 0; /* Remove top margin */
-    margin-bottom: 12px; /* Space below developer */
+    margin-bottom: 5px; /* Space below developer */
     font-style: italic;
 }
 .game-developer strong {
+	font-size: 1.5rem !important;
     color: var(--text-muted);
     font-style: normal;
     font-weight: 600;
@@ -509,9 +501,10 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 .platform-item {
     background-color: var(--accent-color);
     color: var(--text-muted);
-    padding: 4px; /* Adjust padding as needed */
+    padding: 5px 8px 5px 8px; /* Adjust padding as needed */
     border-radius: 4px; /* Adjust for desired shape */
-    font-size: 0.85em;
+    font-size: 1rem;
+	font-weight: 600;
     line-height: 1.4;
     border: 1px solid var(--border-light);
     /* --- Use Flexbox to align icon and text --- */
@@ -556,7 +549,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
     transition: opacity 0.3s ease, height 0.3s ease; /* Add smooth transition */
 }
 
-body.gog-links-hidden .store-links-container {
+body.store-links-hidden .store-links-container {
     display: none;
     /* Alternatively, use opacity and height for a fade effect: */
     /* opacity: 0; */
@@ -597,13 +590,29 @@ body.gog-links-hidden .store-links-container {
     flex-shrink: 0; /* Prevent logo from shrinking */
 }
 
-/* Specific GOG Button Style */
+/* Store Button Styles */
 .gog-button {
-    background-color: #8a43ce; /* GOG purple */
+    background-color: #513968;
     color: #ffffff;
 }
 .gog-button:hover {
     background-color: #6e36a8;
+}
+
+.steam-button {
+	background-color: #26323e; 
+    color: #ffffff;
+}
+.steam-button:hover {
+	background-color: #203b56;
+}
+
+.epic-games-button {
+	background-color: #202024; 
+    color: #ffffff;
+}
+.epic-games-button:hover {
+	background-color: #404044;
 }
 
 /* Loading/Error messages within store container */
@@ -768,8 +777,16 @@ body.gog-links-hidden .store-links-container {
     accent-color: var(--primary-color); /* Style radio button itself */
 }
 
+/* Style for Font Row */
+.font-control-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 #font-selector {
-    width: 100%;
+	flex-grow: 1;
+    width: auto;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -783,6 +800,22 @@ body.gog-links-hidden .store-links-container {
     border-color: var(--primary-color);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 0, 123, 255), 0.25);
+}
+
+#refresh-fonts-button {
+    flex-shrink: 0; /* Prevent button from shrinking */
+    padding: 6px 8px; /* Adjust padding */
+    line-height: 1;
+    background-color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+#refresh-fonts-button:hover {
+    background-color: var(--accent-darker);
+    color: var(--text-color);
 }
 
 /* === Custom Color Editor Styles === */

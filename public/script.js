@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const searchButton = document.getElementById('searchButton'); // Make sure this finds the button
     const resultsDiv = document.getElementById('results');
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
+	
 
     // Settings Elements
     const settingsCog = document.getElementById('settings-cog');
@@ -13,28 +14,30 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const settingsClose = document.getElementById('settings-close');
     const themeRadioGroup = document.getElementById('theme-radio-group'); // Get the group
     const fontSelector = document.getElementById('font-selector');
+	const refreshFontsButton = document.getElementById('refresh-fonts-button');
     const customColorEditor = document.getElementById('custom-color-editor');
     const customColorInputs = customColorEditor.querySelectorAll('input[type="color"]');
     const customHexInputs = customColorEditor.querySelectorAll('input.hex-input');
     const resetCustomColorsButton = document.getElementById('reset-custom-colors');
-	const gogToggleGroup = document.getElementById('gog-toggle-group');
+	const storeLinksToggleGroup = document.getElementById('store-links-toggle-group');
 	const exportButton = document.getElementById('export-colors-button'); // Import, Export and file dialogue
     const importButton = document.getElementById('import-colors-button');
     const importFileInput = document.getElementById('import-file-input');
 	const platformLogoSizeInput = document.getElementById('platform-logo-size');
     const platformTextToggleGroup = document.getElementById('platform-text-toggle-group');
 	
-
+	// Constants
     const API_BASE_URL = 'http://localhost:3000';
     const LOCAL_STORAGE_THEME_KEY = 'selectedTheme';
     const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
     const LOCAL_STORAGE_CUSTOM_COLORS_KEY = 'customThemeColors';
-	const LOCAL_STORAGE_GOG_KEY = 'gogButtonEnabled';
 	const LOCAL_STORAGE_LOGO_SIZE_KEY = 'platformLogoSize';
     const LOCAL_STORAGE_PLATFORM_TEXT_KEY = 'platformTextVisible';
+	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
+	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 
     // --- Verify crucial elements exist ---
-    if (!searchButton || !gameInput || !resultsDiv || !gogToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !customColorEditor || !resetCustomColorsButton
+    if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
         || !platformLogoSizeInput || !platformTextToggleGroup ) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
@@ -43,6 +46,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     console.log("All essential elements verified.");
     // Add similar checks for settings elements if needed
 
+	// --- Create Style Tag for Dynamic Fonts ---
+    let dynamicFontStyleSheet = document.getElementById(DYNAMIC_FONT_STYLE_ID);
+    if (!dynamicFontStyleSheet) {
+        dynamicFontStyleSheet = document.createElement('style');
+        dynamicFontStyleSheet.id = DYNAMIC_FONT_STYLE_ID;
+        document.head.appendChild(dynamicFontStyleSheet);
+        console.log("Created style tag for dynamic fonts.");
+    }
 
     // --- Event Listeners ---
 	searchButton.addEventListener('click', searchGamesList);
@@ -59,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     console.log("Theme listener attached.");
     fontSelector.addEventListener('change', (event) => applyFont(event.target.value));
     console.log("Font listener attached.");
-    gogToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') applyGogToggle(event.target.value === 'on'); });
-    console.log("GOG toggle listener attached.");
+    storeLinksToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') { applyStoreLinksToggle(event.target.value === 'on'); } });
+    console.log("Store Links Toggle Group listener attached.");
     customColorInputs.forEach(picker => { picker.addEventListener('input', handleColorInputChange); picker.addEventListener('change', handleColorInputChange); });
     console.log("Custom color picker listeners attached.");
     customHexInputs.forEach(hexInput => { hexInput.addEventListener('change', handleHexInputChange); });
@@ -73,13 +84,15 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     console.log("Import listener attached.");
     importFileInput.addEventListener('change', importCustomColors);
     console.log("File input listener attached.");
-	// --- ADD PLATFORM DISPLAY LISTENERS ---
+	// PLATFORM DISPLAY LISTENERS
     platformLogoSizeInput.addEventListener('input', (event) => { applyLogoSize(event.target.value); });
     platformLogoSizeInput.addEventListener('change', (event) => { applyLogoSize(event.target.value, true); });
     console.log("Platform logo size listeners attached.");
     platformTextToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') { applyPlatformTextVisibility(event.target.value === 'show'); }});
     console.log("Platform text toggle listener attached.");
-    // --- END ADD ---
+    // FONT REFRESH BUTTON listener
+	refreshFontsButton.addEventListener('click', loadLocalFonts); // <-- Add Listener
+    console.log("Refresh fonts listener attached.");
 
     console.log("Finished attaching event listeners.");
 
@@ -296,13 +309,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 
-    function applyGogToggle(isEnabled) { 
-        console.log("Setting GOG button visibility preference:", isEnabled);
+    function applyStoreLinksToggle(isEnabled) { 
+        console.log("Setting Store Links visibility preference:", isEnabled);
          // 1. Add/Remove class on body for instant visual feedback
-        document.body.classList.toggle('gog-links-hidden', !isEnabled); // Add class if NOT enabled
+        document.body.classList.toggle('store-links-hidden', !isEnabled); // Add class if NOT enabled
 
         // 2. Save preference to localStorage
-        localStorage.setItem(LOCAL_STORAGE_GOG_KEY, isEnabled ? 'true' : 'false'); // Save preference
+        localStorage.setItem(LOCAL_STORAGE_STORE_LINKS_KEY, isEnabled ? 'true' : 'false'); // Save preference
     }
 
     function applyLogoSize(size, savePreference = false) {
@@ -324,8 +337,100 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         localStorage.setItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY, isVisible ? 'true' : 'false');
     }
     
+    async function loadLocalFonts() {
+        console.log("Loading local fonts from fonts.json...");
+        try {
+            const response = await fetch('fonts/fonts.json'); // Fetch the JSON file
+            if (!response.ok) {
+                throw new Error(`Failed to fetch fonts.json: ${response.status}`);
+            }
+            const localFonts = await response.json();
+
+            if (!Array.isArray(localFonts)) {
+                 throw new Error("fonts.json did not contain a valid array.");
+            }
+
+            console.log("Found local fonts:", localFonts);
+
+            // 1. Clear previous dynamic font options and styles
+            const existingOptions = fontSelector.querySelectorAll('option[data-dynamic-font]');
+            existingOptions.forEach(option => option.remove());
+            dynamicFontStyleSheet.innerHTML = ''; // Clear previous @font-face rules
+
+            // 2. Generate @font-face rules and add options
+            let fontFaceRules = "";
+            localFonts.forEach(font => {
+                if (font.name && font.filename && font.cssValue) {
+                    // Generate @font-face rule
+                    // Assuming filename includes extension (.woff, .ttf, .otf)
+                    // Determining format based on extension
+                    let format = 'woff'; // Default
+                    if (font.filename.endsWith('.woff2')) format = 'woff2';
+                    else if (font.filename.endsWith('.ttf')) format = 'truetype';
+                    else if (font.filename.endsWith('.otf')) format = 'opentype';
+
+                    fontFaceRules += `
+@font-face {
+    font-family: '${font.name}'; /* Use the name from JSON */
+    src: url('/fonts/${font.filename}') format('${format}');
+    /* Add font-weight/style here if defined in JSON */
+}
+`;
+                    // Add option to dropdown
+                    const option = document.createElement('option');
+                    option.value = font.cssValue; // e.g., "'pxSans', sans-serif"
+                    option.textContent = font.name; // e.g., "pxSans"
+                    option.dataset.dynamicFont = 'true'; // Mark as dynamic
+                    // Insert before the first non-dynamic option (like Google Fonts)
+                    const firstGoogleFont = fontSelector.querySelector("option:not([data-dynamic-font])");
+                    if(firstGoogleFont){
+                        fontSelector.insertBefore(option, firstGoogleFont);
+                    } else {
+                        fontSelector.appendChild(option); // Append if no static fonts left
+                    }
+
+                } else {
+                    console.warn("Skipping invalid font entry in fonts.json:", font);
+                }
+            });
+
+            // 3. Add all @font-face rules to the style tag
+            dynamicFontStyleSheet.innerHTML = fontFaceRules;
+            console.log("Added @font-face rules and dropdown options.");
+
+            // 4. Re-apply saved font in case it was a dynamic one that just loaded
+            const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
+            if (savedFont) {
+                // Check if the saved font is now available in the dropdown
+                 const validFonts = Array.from(fontSelector.options).map(option => option.value);
+                 if (validFonts.includes(savedFont)) {
+                    console.log("Re-applying previously saved dynamic font:", savedFont);
+                    applyFont(savedFont); // Apply the style
+                    fontSelector.value = savedFont; // Set the dropdown value
+                 } else {
+                     console.warn(`Saved font "${savedFont}" still not found after refresh. Using default.`);
+                      // Optionally reset to system default visually if saved font is invalid now
+                      // applyFont(fontSelector.querySelector("option[value*='-apple-system']").value);
+                      // fontSelector.value = fontSelector.querySelector("option[value*='-apple-system']").value;
+                 }
+            }
+
+        } catch (error) {
+            console.error("Error loading or processing local fonts:", error);
+            dynamicFontStyleSheet.innerHTML = '/* Error loading font definitions */'; // Clear on error
+             // Optionally inform user: alert("Could not load local fonts from fonts.json.");
+        }
+    }
+	
 	function loadSettings() {
+		// NOTE: We call loadLocalFonts() at the end of DOMContentLoaded now,
+        // so it runs *before* this most of the time.
+        // This function primarily needs to handle selecting the saved font
+        // *after* loadLocalFonts has potentially populated the list.
+        // The logic inside loadLocalFonts already re-applies the saved font.
+		
         try { // Wrap entire function for safety
+			console.log("--- loadSettings START ---");
             const savedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
             const defaultTheme = 'light';
 
@@ -352,35 +457,33 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                  if (defaultThemeRadio) defaultThemeRadio.checked = true;
             }
 
-            // Apply saved font
-			const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
+            // Load Font (Validation happens within loadLocalFonts now)
+            const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
             if (savedFont) {
-                // Validate font
-                 const validFonts = Array.from(fontSelector.options).map(option => option.value);
-                 if (validFonts.includes(savedFont)) {
-                    applyFont(savedFont);
+                // We don't apply here directly, loadLocalFonts handles re-applying if needed
+                // We just set the dropdown value if the option exists *now*
+                 const fontOption = fontSelector.querySelector(`option[value="${CSS.escape(savedFont)}"]`);
+                 if(fontOption) {
                     fontSelector.value = savedFont;
+                    console.log(`loadSettings: Set font selector to saved value: ${savedFont}`);
                  } else {
-                     console.warn(`Saved font "${savedFont}" is invalid. Using default.`);
-                     localStorage.removeItem(LOCAL_STORAGE_FONT_KEY);
+                     console.warn(`loadSettings: Saved font "${savedFont}" not found in dropdown (might load dynamically).`);
+                     // Don't remove from storage here, loadLocalFonts will handle validation
                  }
             }
 
-			
-            // --- Load GOG Toggle State ---
-            const savedGogEnabled = localStorage.getItem(LOCAL_STORAGE_GOG_KEY);
+            // --- Load Store Links Toggle State ---
+            const savedStoreLinksEnabled = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY);
             // Default to 'true' (enabled) if no setting is saved yet
-            const gogIsEnabled = savedGogEnabled === null ? true : (savedGogEnabled === 'true');
-			applyGogToggle(gogIsEnabled); // Apply the setting (which now includes adding/removing class)
-            const valueToSelect = gogIsEnabled ? 'on' : 'off';
-            const currentGogRadio = gogToggleGroup.querySelector(`input[name="gogToggle"][value="${valueToSelect}"]`);
-            if (currentGogRadio) {
-                currentGogRadio.checked = true;
-            } else { // Fallback if somehow radios are missing/changed
-                 const defaultGogRadio = gogToggleGroup.querySelector('input[name="gogToggle"][value="on"]');
-                 if (defaultGogRadio) defaultGogRadio.checked = true;
+            const storeLinksAreEnabled = savedStoreLinksEnabled === null ? true : (savedStoreLinksEnabled === 'true');
+			applyStoreLinksToggle(storeLinksAreEnabled); // Apply the setting (which now includes adding/removing class)
+            const valueToSelectStore = storeLinksAreEnabled ? 'on' : 'off';
+            const currentStoreRadio = storeLinksToggleGroup.querySelector(`input[name="storeLinksToggle"][value="${valueToSelectStore}"]`);
+            if (currentStoreRadio) currentStoreRadio.checked = true;
+            else { // Fallback if somehow radios are missing/changed
+                 const defaultStoreRadio = storeLinksToggleGroup.querySelector('input[name="storeLinksToggle"][value="on"]');
+                 if (defaultStoreRadio) defaultStoreRadio.checked = true;
             }
-            // --- End GOG Toggle Load ---
 
 			// Platform Text Visibility
             const savedTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY);
@@ -398,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 			// --- Update Log ---
             const finalLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
             const finalTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
-            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${localStorage.getItem(LOCAL_STORAGE_FONT_KEY) || 'Default'}', GOG='${gogIsEnabled}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}'`);
+            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${savedFont || 'Default'}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}', StoreLinks='${storeLinksAreEnabled}'`);
 
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
@@ -567,6 +670,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'dos.png';
 		} else if (nameLower.includes('pc-98') || nameLower.includes('NEC PC-9800')) {
             return basePath + 'pc98.png';
+		} else if (nameLower.includes('fmtowns') || nameLower.includes('fm towns')) {
+            return basePath + 'fmtowns.png';
 		} else if (nameLower.includes('pc')) { // General fallback for generic pc
             return basePath + 'pc.gif';
         } else if (nameLower.includes('playstation 5') || nameLower.includes('ps5')) {
@@ -651,6 +756,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'saturn.png';
 		} else if (nameLower.includes('32x') || nameLower.includes('sega 32x')) { 
             return basePath + 'sega32x.png';
+		} else if (nameLower.includes('mega cd') || nameLower.includes('sega cd')) { 
+            return basePath + 'segacd.png';
         } else if (nameLower.includes('stadia') || nameLower.includes('google stadia')) { 
             return basePath + 'stadia.png';
         } else if (nameLower.includes('gbc') || nameLower.includes('game boy color')) { 
@@ -926,9 +1033,43 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         obsButtonContainer.appendChild(saveButton);
         // --- End Save Button ---
 		
+		// --- Populate Store Links ---
+        let hasAnyStoreLink = false;
+        storeLinksContainer.innerHTML = ''; // Clear initially
+		
+		// 1. Add buttons for links found directly on IGDB (Steam/Epic)
+        if (data.igdbStoreLinks && data.igdbStoreLinks.length > 0) {
+             console.log(`Adding ${data.igdbStoreLinks.length} buttons from IGDB data.`);
+             data.igdbStoreLinks.forEach(link => {
+                 let logoSrc = 'images/default_store.png';
+                 if (link.name === 'Steam') logoSrc = 'images/steam_logo.png';
+                 else if (link.name === 'Epic Games') logoSrc = 'images/epic_logo.png';
+                 addStoreButton(storeLinksContainer, link.name, link.url, logoSrc);
+                 hasAnyStoreLink = true;
+             });
+        } else {
+            console.log("No direct Steam/Epic links found in IGDB data.");
+        }
+
+        // 2. Conditionally check GOG store via API
+        const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
+
+        if (shouldShowStores) {
+            // Pass flag indicating if other buttons already exist to manage loading message
+            checkAndAddGogButton(data.name, storeLinksContainer, hasAnyStoreLink);
+        } else {
+             console.log("Store links check disabled by user setting.");
+             // If no IGDB links were found AND the check is disabled, the container remains empty.
+             // If IGDB links *were* found, they remain visible even if GOG check is off.
+        }
+		
+        // --- End Populate Store Links ---
+
+
+		
         // --- Always check GOG store ---
-        console.log("Initiating GOG store check (visibility controlled by CSS)...");
-        checkGogStore(data.name, storeLinksContainer); // Call unconditionally
+        //console.log("Initiating GOG store check (visibility controlled by CSS)...");
+        //checkGogStore(data.name, storeLinksContainer); // Call unconditionally
         // --- End GOG Check ---
         
 		
@@ -941,56 +1082,83 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
       
     /**
-     * NEW Function: Checks GOG store and adds button if found.
+     * Function: Checks GOG store and adds button if found.
      * @param {string} gameName - The name of the game to check.
      * @param {HTMLElement} container - The container element to add the button to.
+	 * @param {boolean} otherLinksExist - Flag to control loading message display
      */
-    async function checkGogStore(gameName, container) {
-        console.log(`Checking GOG store for "${gameName}"...`);
-        container.innerHTML = `<p class="info-message store-loading">Checking GOG.com...</p>`; // Loading indicator
+    async function checkAndAddGogButton(gameName, container, otherLinksExist) {
+        console.log(`Checking GOG API for "${gameName}"...`);
+        let loadingIndicator = null;
+        // Only show loading if no other buttons are there yet
+        if (!otherLinksExist) {
+            container.innerHTML = `<p class="info-message store-loading">Checking GOG.com...</p>`;
+            loadingIndicator = container.querySelector('.store-loading');
+        }
 
         const gogCheckUrl = `${API_BASE_URL}/checkGog?gameName=${encodeURIComponent(gameName)}`;
 
         try {
             const response = await fetch(gogCheckUrl);
-            const result = await response.json(); // Expecting { found: boolean, url?: string, error?: string }
+            const result = await response.json();
 
-            // Clear loading indicator
-            const loadingIndicator = container.querySelector('.store-loading');
+            // Clear loading indicator if it exists
             if (loadingIndicator) loadingIndicator.remove();
 
             if (response.ok && result.found && result.url) {
-                addStoreButton(container, 'GOG', result.url, 'images/gog_logo.png'); // Add button on success
+                addStoreButton(container, 'GOG', result.url, 'images/gog_logo.png');
             } else {
-                console.log(`GOG check for "${gameName}" returned found: false or encountered an error.`);
-                // Optionally display "Not found on GOG" message or just leave container empty
-                 if (!response.ok) {
-                     console.error(`GOG check failed with status ${response.status}`, result.error || '');
-                 }
+                 console.log(`GOG check for "${gameName}" returned found: false or error.`);
+                 if (!response.ok) console.error(`GOG check failed: ${response.status}`, result.error || '');
             }
-
-        } catch (error) { // Catch fetch errors
+        } catch (error) {
             console.error("Error during GOG store check fetch:", error);
-            const loadingIndicator = container.querySelector('.store-loading');
             if (loadingIndicator) loadingIndicator.remove();
-            container.innerHTML = `<p class="error-message store-error">Could not check GOG.com.</p>`; // Error message
+            // Optionally add a specific error message for GOG failure
+            // container.innerHTML += `<p class="error-message store-error">Could not check GOG.com.</p>`;
         }
-    } // End checkGogStore
+    } // End checkAndAddGogButton
 
-    /**
-     * NEW Helper: Creates and adds a store button/link.
+      
+	 /**
+     * Helper: Creates and adds a store button/link.
      * @param {HTMLElement} container - The parent element.
-     * @param {string} storeName - e.g., "GOG".
+     * @param {string} storeName - e.g., "GOG", "Steam", "Epic Games".
      * @param {string} url - The URL to the store page.
      * @param {string} logoSrc - Path to the local store logo image.
      */
      function addStoreButton(container, storeName, url, logoSrc) {
         const link = document.createElement('a');
         link.href = url;
-        link.target = '_blank'; // Open in new tab
-        link.rel = 'noopener noreferrer'; // Security best practice
-        link.classList.add('store-button', `${storeName.toLowerCase()}-button`);
-        link.title = `Buy on ${storeName}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+
+        // --- CORRECTED CLASS NAME GENERATION ---
+        // 1. Convert to lowercase
+        // 2. Replace one or more spaces (\s+) globally (g) with a single hyphen (-)
+        // 3. Remove any character that is NOT a letter (a-z), number (0-9), or hyphen (-) globally (g)
+        const sanitizedClassNamePart = storeName.toLowerCase()
+                                          .replace(/\s+/g, '-')
+                                          .replace(/[^a-z0-9-]/g, '');
+        // 4. Add '-button' suffix
+        const storeClass = `${sanitizedClassNamePart}-button`;
+        // Example: "Epic Games" -> "epic-games" -> "epic-games-button"
+        // Example: "Steam (Main)" -> "steam-(main)" -> "steam--main" -> "steam-main-button" (approx)
+        // Example: "itch.io" -> "itch.io" -> "itchio" -> "itchio-button"
+        // --- END CORRECTION ---
+
+
+        // Add the base class and the generated specific class
+        console.log(`addStoreButton: Adding classes 'store-button', '${storeClass}' for store "${storeName}"`);
+        try {
+             link.classList.add('store-button', storeClass);
+        } catch (e) {
+             console.error(`Error adding classes for store "${storeName}" (generated class: "${storeClass}"):`, e);
+             link.classList.add('store-button'); // Add base class at least
+        }
+
+
+        link.title = `View on ${storeName}`; // Use "View on" for consistency
 
         // Add logo
         const logo = document.createElement('img');
@@ -998,36 +1166,33 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         logo.alt = `${storeName} logo`;
         logo.classList.add('store-logo');
         logo.width = 16; logo.height = 16;
-        logo.onerror = () => { // Handle missing logo file
-            console.warn(`Failed to load store logo: ${logoSrc}`);
-            logo.remove();
-        };
+        logo.onerror = () => { console.warn(`Failed to load store logo: ${logoSrc}`); logo.remove(); };
 
         // Add text
         const text = document.createElement('span');
-        text.textContent = `Buy on ${storeName}`;
+        text.textContent = `View on ${storeName}`; // Use "View on"
 
         link.appendChild(logo);
         link.appendChild(text);
-        container.appendChild(link); // Add the complete link to the container
+        container.appendChild(link);
     } // End addStoreButton
 
-	// --- UPDATED Function to Save HTML for OBS (Embeds Font Info) ---
+	// --- Function to Save HTML for OBS (Embeds Font Info) ---
     async function saveResultsHtml(gameName) { // Function is async
         console.log(`Generating HTML for "${gameName}" with font embedding...`);
 
-        // --- Step 0: Check GOG Visibility Setting ---
-        const shouldShowGog = localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === 'true');
-        console.log(`GOG button visibility for saved HTML: ${shouldShowGog}`);
+        // --- Step 0: Check Store Links Visibility Setting ---
+        const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true'); // Use correct key
+        console.log(`Store links visibility for saved HTML: ${shouldShowStores}`);
 
         // --- Step 1: Clone results content ---
         const resultsClone = resultsDiv.cloneNode(true);
 
         // --- Step 1a: Conditionally Remove Store Links Container from Clone ---
-        if (!shouldShowGog) {
+        if (!shouldShowStores) {
             const storeContainerInClone = resultsClone.querySelector('.store-links-container');
             if (storeContainerInClone) {
-                console.log("GOG check is OFF - Removing store links container from saved HTML.");
+                console.log("Store links check is OFF - Removing store links container from saved HTML.");
                 storeContainerInClone.remove(); // Remove the entire container
             }
         } else {
@@ -1153,11 +1318,19 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         URL.revokeObjectURL(url);
 
         console.log(`Download triggered for ${link.download}. Font info embedded.`);
-    } // End saveResultsHtml
+    } 
 
-    // --- Initial Setup ---
-    loadSettings(); // Load saved settings on page load
+    // Initial Setup
+    loadLocalFonts().then(() => { // Load local fonts first
+         console.log("Local fonts loaded (or attempted). Now loading other settings...");
+         loadSettings(); // THEN load other settings (which might select a dynamic font)
+         console.log("Initial setup complete.");
+    }).catch(err => {
+         console.error("Error during initial font load:", err);
+         // Still try to load other settings even if fonts fail
+         loadSettings(); // Load saved settings on page load
 	console.log("Initial setup complete.");
+	});
 
-}); // End DOMContentLoaded wrapper
-    
+
+}); // End DOMContentLoaded

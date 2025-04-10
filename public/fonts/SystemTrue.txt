@@ -1,0 +1,3 @@
+https://github.com/Trinitek/WPFWin3/blob/master/Windows3Style/Themes/Fonts/SystemTrue.ttf
+
+MIT License - Trinitek - WPFWin3

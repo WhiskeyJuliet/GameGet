@@ -1,0 +1,13 @@
+[
+  {
+    "name": "pxSans",
+    "filename": "pxSans.woff",
+    "cssValue": "'pxSans', sans-serif"
+  },
+  {
+    "name": "SystemTrue",
+    "filename": "SystemTrue.ttf",
+    "cssValue": "'SystemTrue', sans-serif"
+  }
+
+]

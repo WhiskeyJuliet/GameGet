@@ -1,0 +1,13 @@
+[
+  {
+    "name": "pxSans",
+    "filename": "pxSans.woff",
+    "cssValue": "'pxSans', sans-serif"
+  },
+  {
+    "name": "Your Font Name",
+    "filename": "YourFont.ttf",
+    "cssValue": "'Your Font Name', sans-serif"
+  }
+
+]
