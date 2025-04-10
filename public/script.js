@@ -1016,18 +1016,40 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     async function saveResultsHtml(gameName) { // Function is async
         console.log(`Generating HTML for "${gameName}" with font embedding...`);
 
-        // --- Step 1: Clone results content and adjust image paths ---
+        // --- Step 0: Check GOG Visibility Setting ---
+        const shouldShowGog = localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_GOG_KEY) === 'true');
+        console.log(`GOG button visibility for saved HTML: ${shouldShowGog}`);
+
+        // --- Step 1: Clone results content ---
         const resultsClone = resultsDiv.cloneNode(true);
+
+        // --- Step 1a: Conditionally Remove Store Links Container from Clone ---
+        if (!shouldShowGog) {
+            const storeContainerInClone = resultsClone.querySelector('.store-links-container');
+            if (storeContainerInClone) {
+                console.log("GOG check is OFF - Removing store links container from saved HTML.");
+                storeContainerInClone.remove(); // Remove the entire container
+            }
+        } else {
+            // Optional: Clean up loading message if it's still there (shouldn't be usually)
+            const loadingInClone = resultsClone.querySelector('.store-links-container .store-loading');
+             if (loadingInClone) loadingInClone.remove();
+        }
+        // --- End Conditional Removal ---
+
+
+        // --- Step 1b: Adjust image paths (Keep this logic) ---
         const imagesToAdjust = resultsClone.querySelectorAll('img');
         imagesToAdjust.forEach(img => {
             const currentSrc = img.getAttribute('src');
             if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) {
-                img.src = '../' + currentSrc; // Adjust for saving in results/ subdir
+                img.src = '../' + currentSrc;
             }
         });
-        const buttonInClone = resultsClone.querySelector('#save-obs-button');
+        const buttonInClone = resultsClone.querySelector('#save-obs-button'); // Should not be inside #results
         if (buttonInClone) buttonInClone.remove();
-        const resultsContent = resultsClone.innerHTML;
+        const resultsContent = resultsClone.innerHTML; // Get HTML *after* potential removal
+
 
         // --- Step 2: Get current theme ---
         const currentTheme = document.body.dataset.theme || 'light';
@@ -1088,35 +1110,35 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
         // --- Step 6: Construct the full HTML structure ---
         const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameGet Result - ${gameName}</title>
-    <!-- Include Google Font Link -->
-    ${googleFontLinkTag}
-    <style>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>GameGet Result - ${gameName}</title>
+		<!-- Include Google Font Link -->
+		${googleFontLinkTag}
+		<style>
         /* --- Embedded Main Styles (with adjusted local font path) --- */
         ${processedCss}
 
         /* --- Applied Theme/Custom Variables --- */
         body {
-${appliedVariables}
+		${appliedVariables}
         }
 
         /* --- OBS Specific Overrides --- */
         body { margin: 0; padding: 0; }
         #results { border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
         #results button { display: none !important; }
-    </style>
-</head>
-<body data-theme="${currentTheme}">
-    <!-- Results div content with adjusted image paths -->
-    <div id="results">
+		</style>
+		</head>
+		<body data-theme="${currentTheme}">
+		<!-- Results div content with adjusted image paths -->
+		<div id="results">
         ${resultsContent}
-    </div>
-</body>
-</html>`;
+		</div>
+		</body>
+		</html>`;
 
         // --- Step 7: Create Blob and Download Link ---
         const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
