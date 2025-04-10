@@ -422,9 +422,9 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 }
 
 .game-info > img {
-    width: 152px;
+    width: auto;
     height: auto;
-    max-width: 30%;
+    max-width: 24%;
     border: 1px solid var(--border-color);
     border-radius: 0px;
     box-shadow: 0 2px 4px var(--shadow-light);
