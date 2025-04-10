@@ -721,7 +721,7 @@ body.gog-links-hidden .store-links-container {
 .setting-row {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Align label and control */
+    justify-content: flex-start; /* Align label and control */
     margin-bottom: 12px;
     gap: 15px; /* Space between label and control */
 }
@@ -739,7 +739,7 @@ body.gog-links-hidden .store-links-container {
     margin-right: 15px;
 }
 .setting-row .radio-group {
-    text-align: right; /* Align radio options right */
+    text-align: left; /* Align radio options right */
     flex-grow: 1; /* Allow radio group to take space */
 }
 
@@ -752,7 +752,7 @@ body.gog-links-hidden .store-links-container {
     border-radius: 4px;
     background-color: var(--element-bg);
     color: var(--text-color);
-    text-align: center;
+    text-align: left;
 }
 
 
