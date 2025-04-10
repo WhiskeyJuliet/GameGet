@@ -619,6 +619,12 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'linux.png';
         } else if (nameLower.includes('mac') || nameLower.includes('macos')) {
             return basePath + 'mac.png';
+		} else if (nameLower.includes('apple II') || nameLower.includes('apple IIe')) {
+            return basePath + 'appleII.png';
+		} else if (nameLower.includes('apple IIGS') || nameLower.includes('apple II GS')) {
+            return basePath + 'appleIIgs.png';
+		} else if (nameLower.includes('apple')) {
+            return basePath + 'apple.png';
         } else if (nameLower.includes('android')) {
             return basePath + 'android.png';
         } else if (nameLower.includes('ios')) {
@@ -643,6 +649,18 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'mastersystem.png';
 		} else if (nameLower.includes('saturn') || nameLower.includes('sega saturn')) { 
             return basePath + 'saturn.png';
+		} else if (nameLower.includes('32x') || nameLower.includes('sega 32x')) { 
+            return basePath + 'sega32x.png';
+        } else if (nameLower.includes('stadia') || nameLower.includes('google stadia')) { 
+            return basePath + 'stadia.png';
+        } else if (nameLower.includes('gbc') || nameLower.includes('game boy color')) { 
+            return basePath + 'gbc.png';
+        } else if (nameLower.includes('gba') || nameLower.includes('game boy advance')) { 
+            return basePath + 'gba.png';
+        } else if (nameLower.includes('game boy') || nameLower.includes('gb')) { 
+            return basePath + 'gameboy.png';
+        } else if (nameLower.includes('3do') || nameLower.includes('3do interactive multiplayer')) { 
+            return basePath + '3do.png';
         }
 		// Add more mappings here for other consoles/platforms as needed...
 
@@ -695,32 +713,80 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     } // End searchGamesList
 
-    function displaySearchResultsList(results) {
+        function displaySearchResultsList(results) { // results is now {id, name, year, type, platforms: [name1,...]}
         resultsDiv.innerHTML = '';
-		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container when showing list
+        obsButtonContainer.innerHTML = '';
         const instruction = document.createElement('p');
         instruction.classList.add('info-message');
         instruction.textContent = 'Select a game to view details:';
         resultsDiv.appendChild(instruction);
+
         const list = document.createElement('ul');
         list.classList.add('search-results-list');
+
         results.forEach(game => {
             const item = document.createElement('li');
             item.classList.add('search-result-item');
             item.dataset.gameId = game.id;
+
+            // --- Left Container ---
+            const leftContainer = document.createElement('div');
+            leftContainer.classList.add('result-item-left');
+
+            // Title
             const nameSpan = document.createElement('span');
             nameSpan.textContent = game.name;
             nameSpan.classList.add('game-title');
+            leftContainer.appendChild(nameSpan);
+
+            // --- Type Span with Dynamic Class ---
+            const typeSpan = document.createElement('span');
+            const gameTypeString = game.type || 'Game'; // Get type string
+            typeSpan.textContent = gameTypeString;
+            typeSpan.classList.add('game-type');
+            // Add a specific class based on the type for styling
+            // Replace spaces and slashes for valid class names
+            const typeClass = `type-${gameTypeString.toLowerCase().replace(/[\s\/]+/g, '-')}`;
+            typeSpan.classList.add(typeClass);
+            leftContainer.appendChild(typeSpan);
+            // --- End Type Span ---
+
+             // --- Platform Logos Container (Using Local Logos) ---
+            if (game.platforms && game.platforms.length > 0) {
+                const logosContainer = document.createElement('div');
+                logosContainer.classList.add('result-platform-logos');
+                game.platforms.forEach(platformName => { // Iterate through names
+                    const logoPath = getLogoPathForPlatform(platformName); // Get local path
+                    const logoImg = document.createElement('img');
+                    logoImg.src = logoPath; // Use local path
+                    logoImg.alt = platformName; // Use name for alt text
+                    logoImg.classList.add('result-list-platform-logo');
+                    // Size controlled by CSS variable
+                    logoImg.onerror = () => { logoImg.src = 'images/platforms/default.png'; logoImg.onerror = () => { logoImg.remove(); }; }; // Fallback
+                    logosContainer.appendChild(logoImg);
+                });
+                leftContainer.appendChild(logosContainer);
+            }
+            // --- End Platform Logos ---
+
+            // --- Right Container (Year) ---
+            const rightContainer = document.createElement('div');
+            rightContainer.classList.add('result-item-right');
             const dateSpan = document.createElement('span');
             dateSpan.textContent = `(${game.year || 'N/A'})`;
             dateSpan.classList.add('game-shortdate');
-            item.appendChild(nameSpan);
-            item.appendChild(dateSpan);
-            item.addEventListener('click', () => {
-                fetchGameDetails(game.id);
-            });
+            rightContainer.appendChild(dateSpan);
+
+            // --- Append Containers ---
+            item.appendChild(leftContainer);
+            item.appendChild(rightContainer);
+
+            // Add click listener
+            item.addEventListener('click', () => { fetchGameDetails(game.id); });
+
             list.appendChild(item);
         });
+
         resultsDiv.appendChild(list);
     } // End displaySearchResultsList
 

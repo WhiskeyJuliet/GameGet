@@ -69,12 +69,20 @@ app.get('/search', async (req, res) => {
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
         // Query: Search, get ID, Name, and First Release Date, limit to 35 results
+		// category for game-type 0:main_game, 1:dlc_addon, 2:expansion, 3:bundle, 4:standalone_expansion, 5:mod, 6:episode, 7:season, 8:remake, 9:remaster, 10:expanded_game, 11:port, 12:fork
         const requestBody = `
             search "${gameQuery.replace(/"/g, '\\"')}";
-            fields id, name, first_release_date;
-            limit 35; // <--- Increased limit to 35
+            fields
+                id,
+                name,
+                first_release_date,
+                category,
+                version_parent,
+                platforms.name;
+            limit 35;
+            where category != 1 & category != 2 & category != 6 & category != 7;
         `;
-           // where category = 0;
+           
 
         // Update console log message
         console.log(`Querying IGDB for top 35 list matching "${gameQuery}"...`);
@@ -94,12 +102,50 @@ app.get('/search', async (req, res) => {
                 if (game.first_release_date) {
                     releaseYear = new Date(game.first_release_date * 1000).getFullYear().toString();
                 }
+                // Determine Game Type String
+                let gameType = 'Game'; // Default
+                switch (game.category) {
+                    case 0: gameType = 'Main Game'; break;
+                    // case 1: gameType = 'DLC/Addon'; break; // Excluded by 'where' clause, but keep for reference
+                    // case 2: gameType = 'Expansion'; break;
+                    case 3: gameType = 'Bundle'; break;
+                    case 4: gameType = 'Standalone Expansion'; break;
+                    case 5: gameType = 'Mod'; break;
+                    // case 6: gameType = 'Episode'; break;
+                    // case 7: gameType = 'Season'; break;
+                    case 8: gameType = 'Remake'; break;
+                    case 9: gameType = 'Remaster'; break;
+                    case 10: gameType = 'Expanded Game'; break;
+                    case 11: gameType = 'Port'; break;
+                    case 12: gameType = 'Fork'; break;
+                    default: // If unknown category or null
+                        if (game.version_parent) { // Check if it's a version of something else
+                            gameType = 'Version/Port'; // Generic label if parent exists but category unknown/main
+                        } else {
+                            gameType = 'Game'; // Default fallback
+                        }
+                        break;
+                }
+                // Refine type if it's main game but has parent (might be a specific version)
+                if (game.category === 0 && game.version_parent) {
+                     gameType = 'Version/Port';
+                }
+
+				// Extract Platform Names
+				let platformNames = [];
+                if (game.platforms && Array.isArray(game.platforms)) {
+                    platformNames = game.platforms.map(p => p.name).filter(Boolean); // Get names
+                }
+
                 return {
                     id: game.id,
-                    name: game.name,
-                    year: releaseYear
+                    name: game.name || 'Unnamed Game',
+                    year: releaseYear,
+                    type: gameType, // Add the type string
+                    platforms: platformNames // <--- Send array of names
                 };
             });
+            // --- End of mapping ---
 
             console.log(`Found ${resultsWithYear.length} potential matches (sending top 35).`);
             res.json(resultsWithYear);

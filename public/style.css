@@ -303,27 +303,112 @@ a:hover {
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
     font-size: 1em;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+	flex-wrap: wrap; /* Allows year/logos to drop below if needed */
+    gap: 15px; /* Add gap between left and right */
 }
 
 .search-result-item:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-darker);
-    transform: translateY(-1px);
+    /*transform: translateY(-1px);*/
+}
+
+.result-item-left {
+    display: flex; /* Change to flex row */
+    align-items: baseline; /* Align text baselines */
+    gap: 12px; /* Gap between title, type, logos */
+    flex-grow: 1; /* Allow this section to take up most space */
+    flex-shrink: 1; /* Allow shrinking */
+    min-width: 0; /* Important for allowing shrinking */
 }
 
 .game-title {
-    flex-grow: 1;
-    margin-right: 15px;
-    font-weight: 500;
+ font-weight: 500;
+    line-height: 1.3;
+    margin-right: 0;
+    white-space: nowrap; /* Prevent title itself from wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ... if title is too long */
+    flex-shrink: 1; /* Allow title to shrink */
+}
+
+.game-type {
+    display: inline-block; /* Allows background color and padding */
+    font-size: 0.75em; /* Make it smaller */
+    font-style: normal; /* Override potential parent italics */
+    font-weight: 600; /* Make it slightly bolder */
+    padding: 4px 5px 1px 6px; /* Add some padding */
+    border-radius: 4px; /* Slightly rounded corners */
+    line-height: 1.2; /* Adjust line height */
+    margin-top: 0; /* Small space below title */
+    /* Default background and text color (can be muted) */
+	flex-shrink: 0;
+    white-space: nowrap; /* Keep type on one line */
+    background-color: var(--accent-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-light);
+}
+
+/* NEW: Specific Type Highlights */
+.type-main-game { background-color: #007bff; color: #fff; border-color: #0056b3; }
+.type-mod { background-color: #6c757d; color: #fff; border-color: #5a6268; }
+.type-remaster { background-color: #1a6833; color: #fff; border-color: #124723; } /* Dark Green */
+.type-remake { background-color: #28a745; color: #fff; border-color: #1e7e34; } /* Lighter Green */
+.type-port, .type-version-port { background-color: #ffc107; color: #212529; border-color: #d39e00; } /* Yellow */
+.type-expansion, .type-standalone-expansion, .type-expanded-game { background-color: #17a2b8; color: #fff; border-color: #117a8b; } /* Turquoise */
+.type-bundle { background-color: #6f42c1; color: #fff; border-color: #5a32a3;} /* Purple */
+.type-game, /* Default Game type, maybe use primary? */
+.type-fork { background-color: var(--primary-color); color: #fff; border-color: var(--primary-hover); }
+/* Add more rules if other types (DLC etc.) are included */
+
+/* Dark Theme Overrides for Type Highlights (Ensure good contrast) */
+body[data-theme="dark"] .type-main-game { background-color: #0d6efd; border-color: #0b5ed7;}
+body[data-theme="dark"] .type-mod { background-color: #6c757d; border-color: #5a6268; }
+body[data-theme="dark"] .type-remaster { background-color: #208344; border-color: #1a6833; }
+body[data-theme="dark"] .type-remake { background-color: #2aaa4a; border-color: #28a745; }
+body[data-theme="dark"] .type-port, body[data-theme="dark"] .type-version-port { background-color: #ffca2c; color: #212529; border-color: #ffc107; }
+body[data-theme="dark"] .type-expansion, body[data-theme="dark"] .type-standalone-expansion, body[data-theme="dark"] .type-expanded-game { background-color: #20c9e0; border-color: #17a2b8; }
+body[data-theme="dark"] .type-bundle { background-color: #8252d5; border-color: #6f42c1; }
+body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { background-color: var(--primary-color); color: #fff; border-color: var(--primary-hover); }
+/* Add overrides for other custom themes (purple, hotdogstand) if needed for contrast */
+
+/* Container for Platform Logos in List */
+.result-platform-logos {
+/* Remove margin-top */
+    margin-top: 0;
+    display: flex; /* Keep logos in a row */
+    flex-wrap: nowrap; /* Prevent logos wrapping by default */
+    gap: 12px; /* Smaller gap between logos */
+    /* --- Prevent logo container from shrinking initially --- */
+    flex-shrink: 0;
+    /* --- Hide overflow if too many logos --- */
+    overflow: hidden;
+}
+
+/* Style for individual logos in the list */
+.result-list-platform-logo {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+	margin-right: 0.5em;
+	margin-top:1px;
+}
+
+/* Right Container (Year) */
+.result-item-right {
+    flex-shrink: 0; /* Prevent year from shrinking */
+    /* Remove padding-top if set */
+    padding-top: 0;
+    /* Add some left margin for clear separation */
+    margin-left: auto; /* Push year to the far right */
 }
 
 .game-shortdate {
     font-size: 0.9em;
     color: var(--text-muted);
     white-space: nowrap;
-    flex-shrink: 0;
 }
 
 /* === Game Details Display === */
@@ -380,7 +465,7 @@ a:hover {
 
 
 .game-details strong {
-    color: var(--text-color); /* Ensure strong text matches main text */
+    color: var(--text-muted); /* Ensure strong text matches main text */
     font-weight: 600;
 }
 
@@ -424,8 +509,8 @@ a:hover {
 .platform-item {
     background-color: var(--accent-color);
     color: var(--text-muted);
-    padding: 8px 15px 0 0; /* Adjust padding as needed */
-    border-radius: 15px; /* Adjust for desired shape */
+    padding: 4px; /* Adjust padding as needed */
+    border-radius: 4px; /* Adjust for desired shape */
     font-size: 0.85em;
     line-height: 1.4;
     border: 1px solid var(--border-light);
