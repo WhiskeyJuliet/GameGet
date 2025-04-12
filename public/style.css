@@ -43,7 +43,7 @@ body[data-theme="purple"] {
     --text-color: #f8f9fa;
     --text-muted: #adb5bd;
     --border-color: #35293f;
-    --border-light: #35293f;
+    --border-light: #302539;
     --primary-color: #9612db; 
     --primary-hover: #790eb1;
     --accent-color: #382646;
@@ -604,7 +604,6 @@ body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add th
 .rating-input-percent {
     width: 76px;
     text-align: center; /* Align right for percent */
-    padding-right: 2px;
 }
 
 /* Specific width for score */
@@ -648,7 +647,7 @@ body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add th
 .platform-item {
     background-color: var(--accent-color);
     color: var(--text-muted);
-    padding: 5px 12px 5px 0px; /* Adjust padding as needed */
+    padding: 6px 8px 6px 8px; /* Adjust padding as needed */
     border-radius: 4px; /* Adjust for desired shape */
     font-size: 1rem;
 	font-weight: 600;

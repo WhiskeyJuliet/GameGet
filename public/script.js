@@ -921,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                     numInput.placeholder = `0`;
                 } else { // percent
                     numInput.classList.add('rating-input-percent');
-                    numInput.placeholder = `%`;
+                    numInput.placeholder = `0`;
                 }
                 // --- END ADD ---
 
