@@ -1,8 +1,6 @@
 {
-  "name": "gameget_1.1.5",
-  "version": "1.1.5",
-  "name": "gameget_1.1.666",
-  "version": "1.1.666",
+  "name": "gameget_1.2.1",
+  "version": "1.2.1",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -20,7 +18,6 @@
     "express": "^5.1.0",
     "nodemon": "^3.1.9",
     "string-similarity": "^4.0.4"
- 
   }
  
 }
