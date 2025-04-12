@@ -39,14 +39,14 @@ body[data-theme="dark"] {
 /* === Purple Theme === */
 body[data-theme="purple"] {
     --bg-color: #4a345c;
-    --element-bg: #3b3440;
+    --element-bg: #3d2b4d;
     --text-color: #f8f9fa;
     --text-muted: #adb5bd;
     --border-color: #35293f;
     --border-light: #35293f;
     --primary-color: #9612db; 
     --primary-hover: #790eb1;
-    --accent-color: #35293f;
+    --accent-color: #382646;
     --accent-darker: #6c757d;
     --error-color: #f86c7d;
     --shadow-color: rgba(255, 255, 255, 0.05);
@@ -82,7 +82,7 @@ body {
     font-family: var(--body-font); /* Apply font variable */
     line-height: 1.6;
     max-width: 800px;
-    margin: 40px auto;
+    margin: 20px auto 40px auto;
     padding: 0 15px;
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -90,30 +90,56 @@ body {
 }
 
 /* === Headings & Basic Text === */
+
+/* Main Title Container */
+.main-title-container {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: center;   /* Center items horizontally */
+    margin-bottom: 30px;   /* Space below the whole title block */
+    gap: 5px;             /* Small gap between logo, h1, h3 */
+}
+
+/* Main Title Logo */
+.main-title-logo {
+    width: 128px;  /* Adjust desired logo display size (e.g., 80px) */
+    height: 128px; /* Maintain aspect ratio or set specific height */
+    object-fit: contain;
+    margin-bottom: 10px; /* Add some space below the logo */
+	margin-right: 6px; /* Optical alignment adjustment */
+}
+
+/* Adjust H1 styles */
 h1 {
-    text-align: center;
-    color: var(--text-color); /* Use text color or a specific heading color */
-    margin-bottom: 15px;
+    text-align: center; /* Ensure H1 is centered */
+    color: var(--text-color);
+    margin-bottom: 0; /* Remove default margins */
+    margin-top: 0;
     font-weight: 600;
+    font-size: 2.5rem; /* Adjust size */
+    line-height: 1.2;
 }
 
 h2 { /* Added for settings panel */
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 20px;
     font-weight: 600;
     color: var(--text-color);
 }
 
 h3 {
-    text-align: center;
-    color: var(--text-color); /* Use text color or a specific heading color */
-    margin-bottom: 15px;
-    font-weight: 300;
+    text-align: center; /* Ensure H3 is centered */
+    color: var(--text-muted);
+    margin-top: 0; /* Remove default margins */
+    margin-bottom: 0;
+    font-weight: 400;
+    font-size: 1.1rem;
+    line-height: 1.3;
 }
 
 p {
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 6px;
 }
 
 a {
@@ -195,6 +221,7 @@ a:hover {
     text-align: center;
     transition: all 0.3s ease;
 	margin-bottom: 20px; /* Add space below results, before button */
+	position: relative; /* Needed for absolute positioning inside container*/
 }
 
 /* OBS Button Container Styles */
@@ -216,6 +243,7 @@ a:hover {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+	font-family: inherit;
     font-size: 0.95rem;
     font-weight: 500;
     transition: background-color 0.2s ease, transform 0.1s ease;
@@ -430,7 +458,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 
 .game-details h2 {
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 5px;
     color: var(--text-color);
     font-size: 1.75rem;
     font-weight: 600;
@@ -444,7 +472,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 /* Style for Release Date (adjust margin if needed) */
 .game-details p:has(> strong:contains("Release Date")) {
      margin-top: 0;
-     margin-bottom: 12px;
+     margin-bottom: 0;
 }
 
 /* Style for Platforms Label */
@@ -464,7 +492,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 .game-details ul {
     list-style: none;
     padding: 0;
-    margin: 0 0 0 0;
+    margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -495,6 +523,125 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
     color: var(--text-muted);
     font-style: normal;
     font-weight: 600;
+}
+
+/* Rating Container Styles - Floating Top-Right */
+#game-rating-container {      
+    margin-top: 6px; /* Space below release date */
+    margin-bottom: 10px; /* Space above platforms label/list */
+    padding: 0; /* Vertical padding */
+    /*border-top: 1px dashed var(--border-light);*/
+    /*border-bottom: 1px dashed var(--border-light);*/
+    min-height: auto;
+    display: flex; /* Use flex to center content */
+    justify-content: left;
+    align-items: center;
+    gap: 10px;
+    
+}
+
+/* Ensure rating container is hidden correctly when off */
+#game-rating-container:empty, /* Hide if empty */
+body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add this class) */
+{
+    display: none;
+	margin: 0;
+	padding: 0;
+}
+
+
+/* Star Rating Styles */
+.rating-stars {
+    font-size: 1.8em; /* Adjust star size */
+    line-height: 1;
+    cursor: pointer;
+	white-space: nowrap;
+	margin-top: 5px;
+    margin-bottom: 6px;
+}
+.rating-stars span { /* Individual star */
+    color: var(--accent-darker); /* Empty star color */
+    transition: color 0.1s ease-in-out;
+    margin: 0 1px;
+}
+.rating-stars span.filled,
+.rating-stars:hover span.hover { /* Filled or hovered star */
+    color: #ffc107; /* Gold color for filled/hover */
+}
+/* Make stars grey again after the hovered one */
+.rating-stars:hover span.hover ~ span {
+     /*color: var(--accent-darker);*/
+}
+
+/* Percent/Score Input Styles */
+.rating-input-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.rating-input {
+    padding: 4px 6px;
+    font-size: 1.8em; 
+    font-weight: bold;
+    text-align: left;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    color: var(--text-color);
+	border: none;
+	font-family: inherit;
+}
+/* Hide spinner buttons on number input (optional) */
+.rating-input::-webkit-outer-spin-button,
+.rating-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.rating-input[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Specific width for percent */
+.rating-input-percent {
+    width: 76px;
+    text-align: center; /* Align right for percent */
+    padding-right: 2px;
+}
+
+/* Specific width for score */
+.rating-input-score {
+    width: 98px;
+    text-align: center;
+}
+
+.percent-sign {
+    font-size: 1.4em; 
+    font-weight: bold;
+    color: var(--text-muted);
+	text-align: left;
+	margin-left: 2px;
+}
+
+/* Style for Score Label */
+.score-label {
+     font-size: 0.9em; /* Smaller label */
+     color: var(--text-muted);
+     margin-left: 2px; /* Small space after number */
+}
+
+/* Static rating display (for saved HTML) */
+.static-rating {
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-color);
+    /* Add any other desired styling */
+}
+.static-rating .stars { /* Style stars within static display */
+     font-size: 1.2em; /* Match visual size */
+     color: #ffc107; /* Gold */
+     letter-spacing: 1px;
+}
+.static-rating .stars-empty {
+    color: var(--accent-darker); /* Empty stars */
 }
 
 /* Style for EACH platform list item (<li>) */
@@ -726,7 +873,7 @@ body.store-links-hidden .store-links-container {
     color: var(--text-color);
 }
 
-/* NEW: Style for rows within settings groups */
+/* Style for rows within settings groups */
 .setting-row {
     display: flex;
     align-items: center;
@@ -743,14 +890,17 @@ body.store-links-hidden .store-links-container {
 .setting-row .radio-group label {
     font-size: 1em; /* Reset font size */
     color: var(--text-color); /* Reset color */
-    margin-bottom: 5px; /* Adjust spacing */
-    display: inline-block; /* Make radios appear side-by-side */
-    margin-right: 15px;
+    margin-bottom: 8px; /* Adjust spacing */
+    display: block; /* Make rating style options stack vertically */
+    margin-right: 0;
+	text-align: left;
 }
 .setting-row .radio-group {
     text-align: left; /* Align radio options right */
     flex-grow: 1; /* Allow radio group to take space */
 }
+
+
 
 
 /* Style for number input */
@@ -783,6 +933,7 @@ body.store-links-hidden .store-links-container {
     align-items: center;
     gap: 10px;
 }
+
 
 #font-selector {
 	flex-grow: 1;

@@ -6,12 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http'); // Or https if needed
 const fs = require('fs');
-
-// Assuming you are NOT using HTTPS locally based on previous decision
-// const https = require('https');
-// const fs = require('fs');
-const stringSimilarity = require('string-similarity'); // For matching titles
-
+// const stringSimilarity = require('string-similarity'); // REMOVED not needed because switching soley to using igdb store links.
 
 const app = express();
 const port = 3000;
@@ -59,7 +54,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
       
       
-// --- NEW: API Endpoint for Searching (returns list with year) ---
+// --- API Endpoint for Searching (returns list with year) ---
 app.get('/search', async (req, res) => {
     const gameQuery = req.query.gameName;
     if (!gameQuery) {
@@ -172,25 +167,21 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// The /details/:gameId endpoint remains unchanged as it already fetches the full date.
-
-    
-
-
-      
+     
 // --- API Endpoint for getting details of a specific game ID ---
 app.get('/details/:gameId', async (req, res) => {
     const { gameId } = req.params;
     if (!gameId || isNaN(parseInt(gameId))) {
         return res.status(400).json({ error: 'Valid game ID parameter is required.' });
     }
-
+	const parsedGameId = parseInt(gameId);
+	
     try {
         const accessToken = await getTwitchAccessToken();
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
         // Query: Get specific game by ID, fetch detailed fields including platform logos and developer
-		const parsedGameId = parseInt(gameId);
+		
 		const requestBody = `
         fields
             name,
@@ -225,7 +216,7 @@ app.get('/details/:gameId', async (req, res) => {
                 releaseDate: 'N/A',
 				developer: 'N/A', 
                 platforms: [], // Initialize as an empty array
-				igdbStoreLinks: []
+				igdbStoreLinks: [] // Use this array for ALL stores from IGDB
             };
 
             // --- Cover URL Mapping (remains the same) ---
@@ -263,27 +254,31 @@ app.get('/details/:gameId', async (req, res) => {
 					.map(p => (p && typeof p.name === 'string') ? p.name : null) // Get name only if p and p.name exist and are string
 					.filter(Boolean); // Filter out nulls
             }
-            // --- End of Platform Mapping ---
 			
-			// --- Map Steam/Epic Links from IGDB Websites ---
+			// --- Map Store Links (Steam, Epic, GOG) from IGDB Websites ---
             if (game.websites && Array.isArray(game.websites)) {
                 game.websites.forEach(site => {
                     let storeName = null;
                     // ONLY check for Steam and Epic here
                     switch (site.category) {
-                        case 13: storeName = 'Steam'; break;
-                        case 16: storeName = 'Epic Games'; break;
+						
+                        case 17: storeName = 'GOG'; break;
+						case 13: storeName = 'Steam'; break;
+						case 16: storeName = 'Epic Games'; break;
+						case 17: storeName = 'itch.io'; break;
+						
                     }
 
-                    if (storeName && site.url) {
-                        // Basic validation
+                          if (storeName && site.url) {
+                        // Basic validation (Adjust GOG check if needed)
                          const urlLower = site.url.toLowerCase();
                          let isValidStoreUrl = false;
                          if (storeName === 'Steam' && urlLower.includes('store.steampowered.com/app/')) isValidStoreUrl = true;
                          else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValidStoreUrl = true;
+                         else if (storeName === 'GOG' && urlLower.includes('gog.com/')) isValidStoreUrl = true; // Keep GOG check
 
                          if (isValidStoreUrl) {
-                            gameData.igdbStoreLinks.push({ // Use specific array name
+                            gameData.igdbStoreLinks.push({
                                 name: storeName,
                                 url: site.url
                             });
@@ -293,15 +288,13 @@ app.get('/details/:gameId', async (req, res) => {
                          }
                     }
                 });
+                 // Optional: Sort the links alphabetically by name
+                 //gameData.igdbStoreLinks.sort((a, b) => a.name.localeCompare(b.name));
             }
-            // --- End Map Steam/Epic Links ---
+            // --- End Map Store Links ---
 
             console.log("Mapped Game Details:", gameData);
-            res.json(gameData); // Send data structure: { ..., platforms: [{name: '...', logoUrl: '...'}, ...]}
-
-        } else {
-            console.log(`Game ID ${gameId} not found on IGDB.`);
-            res.status(404).json({ error: `Game with ID ${gameId} not found on IGDB.` });
+            res.json(gameData); // Includes igdbStoreLinks array now
         }
 
     } catch (error) {
@@ -319,74 +312,6 @@ app.get('/details/:gameId', async (req, res) => {
         res.status(500).json({ error: 'Failed to get game details from IGDB API.' });
     }
 });
-
-// --- Endpoint to check GOG ---
-app.get('/checkGog', async (req, res) => {
-    const gameName = req.query.gameName;
-    if (!gameName) {
-        return res.status(400).json({ error: 'Game name query parameter is required' });
-    }
-
-    // GOG Search API endpoint (embed version is usually stable)
-    const gogSearchUrl = `https://embed.gog.com/games/ajax/filtered?mediaType=game&search=${encodeURIComponent(gameName)}`;
-
-    console.log(`Checking GOG for "${gameName}": ${gogSearchUrl}`);
-    try {
-        const response = await axios.get(gogSearchUrl, {
-            headers: { // Basic headers usually work
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Node.js App) GameGet/1.0' // Custom user agent
-            },
-            timeout: 7000 // 7 second timeout
-        });
-
-        // Check if the response structure is as expected
-        if (response.data && response.data.products && response.data.products.length > 0) {
-            // Take the first product as the most likely match
-            const firstProduct = response.data.products[0];
-            console.log(`GOG - First result: "${firstProduct.title}"`);
-
-            // Construct the full URL (GOG API often gives relative /game/ url)
-            // Check for 'url' property first, then fall back to others if needed
-            let productUrl = null;
-            if (firstProduct.url) {
-                 productUrl = `https://www.gog.com${firstProduct.url}`;
-            } else if (firstProduct.purchaseLink) {
-                 productUrl = firstProduct.purchaseLink; // Sometimes contains full URL
-            }
-
-            // Use string similarity to compare the found title with the search query
-            const similarity = stringSimilarity.compareTwoStrings(gameName.toLowerCase(), firstProduct.title.toLowerCase());
-            const similarityThreshold = 0.6; // Adjust this threshold (0 to 1) if needed
-            console.log(`GOG - Title similarity: ${similarity.toFixed(2)}`);
-
-            // Check if similarity is good and we have a URL
-            if (productUrl && similarity >= similarityThreshold) {
-                 console.log(`GOG - Match found! URL: ${productUrl}`);
-                 return res.json({ found: true, url: productUrl }); // Send success response
-            } else {
-                 console.log(`GOG - First result title (similarity ${similarity.toFixed(2)}) doesn't match well enough or URL missing.`);
-            }
-        } else {
-            console.log(`GOG - No products found in API response for "${gameName}".`);
-        }
-
-        // If no match found or no products returned
-        res.json({ found: false });
-
-    } catch (error) {
-        console.error(`Error checking GOG for "${gameName}":`, error.message);
-         if (error.response) {
-            console.error("GOG Response Status:", error.response.status);
-            // console.error("GOG Response Data:", error.response.data); // Be cautious logging full data
-         }
-        // Send found: false on error, don't expose internal error details ideally
-        res.status(500).json({ found: false, error: 'Failed to check GOG store.' });
-    }
-});
-// --- End /checkGog endpoint ---
-
-
 
 // Other endpoints (/search, catch-all, etc.) remain unchanged.
 

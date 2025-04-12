@@ -155,16 +155,14 @@
 
     
 		
-		 <!-- NEW: Platform Display Settings -->
+		 <!-- Platform Display Settings -->
         <fieldset class="settings-group">
             <legend>Platform Display</legend>
 
             <!-- Logo Size -->
             <div class="setting-row">
                 <label for="platform-logo-size">Logo Size (px):</label>
-                <input type="number" id="platform-logo-size" name="platformLogoSize" min="8" max="48" step="1" value="16"> <!-- Default 16px -->
-                <!-- Optional: Add a slider as well/instead -->
-                <!-- <input type="range" id="platform-logo-size-slider" min="8" max="48" step="1" value="16"> -->
+                <input type="number" id="platform-logo-size" name="platformLogoSize" min="16" max="64" step="1" value="16"> <!-- Default 16px -->
             </div>
 
             <!-- Text Visibility -->
@@ -177,14 +175,29 @@
             </div>
 
         </fieldset>
+		
+		<!-- Rating System Settings -->
+		<fieldset class="settings-group">
+            <legend>Rating Display</legend>
+            <div class="radio-group" id="rating-style-group"> <!-- Add ID -->
+                <label><input type="radio" name="ratingStyle" value="off" checked> Off</label> <!-- Default to Off -->
+                <label><input type="radio" name="ratingStyle" value="stars"> Stars (★★★★★)</label>
+                <label><input type="radio" name="ratingStyle" value="percent"> Percent (%)</label>
+                <label><input type="radio" name="ratingStyle" value="score"> Score (0-9999)</label>
+            </div>
+        </fieldset>
         <!-- End Platform Display Settings -->
 		
     </div>
     <!-- End Settings Panel -->
 
 
-    <h1>GameGet</h1>
-    <h3>An IGDB Search Tool</h3>
+    <div class="main-title-container">
+        <img src="images/GameGet_Logo.png" alt="GameGet Logo" class="main-title-logo"> <!-- Logo first -->
+        <h1>GameGet</h1>                                                               <!-- Heading second -->
+        <h3>An IGDB Search Tool</h3>                                                   <!-- Subtitle third -->
+    </div>
+    
 
     <div class="search-container">
         <input type="text" id="gameInput" placeholder="Enter game name...">

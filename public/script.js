@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const searchButton = document.getElementById('searchButton'); // Make sure this finds the button
     const resultsDiv = document.getElementById('results');
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
+	const ratingStyleGroup = document.getElementById('rating-style-group');
 	
 
     // Settings Elements
@@ -35,10 +36,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const LOCAL_STORAGE_PLATFORM_TEXT_KEY = 'platformTextVisible';
 	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
+	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
+
+	// --- Global State ---
+    let currentGameRating = { gameId: null, value: null }; // Stores { gameId: 123, value: 4 } or { gameId: 456, value: 85 } etc.
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
-        || !platformLogoSizeInput || !platformTextToggleGroup ) { 
+        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup ) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
         return;
@@ -84,19 +89,28 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     console.log("Import listener attached.");
     importFileInput.addEventListener('change', importCustomColors);
     console.log("File input listener attached.");
+	
 	// PLATFORM DISPLAY LISTENERS
     platformLogoSizeInput.addEventListener('input', (event) => { applyLogoSize(event.target.value); });
     platformLogoSizeInput.addEventListener('change', (event) => { applyLogoSize(event.target.value, true); });
     console.log("Platform logo size listeners attached.");
     platformTextToggleGroup.addEventListener('change', (event) => { if (event.target.type === 'radio') { applyPlatformTextVisibility(event.target.value === 'show'); }});
     console.log("Platform text toggle listener attached.");
+	
     // FONT REFRESH BUTTON listener
 	refreshFontsButton.addEventListener('click', loadLocalFonts); // <-- Add Listener
     console.log("Refresh fonts listener attached.");
-
+	
+	// Rating Style Change Listener
+    ratingStyleGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+            applyRatingStyle(event.target.value);
+        }
+    });
+    console.log("Rating style listener attached.");
+	
+	// End of Event Listeners
     console.log("Finished attaching event listeners.");
-
-
 
 	// --- Settings Functions ---
 	
@@ -319,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     }
 
     function applyLogoSize(size, savePreference = false) {
-        const validSize = Math.max(8, Math.min(48, parseInt(size) || 16));
+        const validSize = Math.max(16, Math.min(64, parseInt(size) || 16));
         console.log(`Applying platform logo size: ${validSize}px`);
         document.documentElement.style.setProperty('--platform-logo-size', `${validSize}px`);
         if (platformLogoSizeInput.value != validSize) {
@@ -422,6 +436,21 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 	
+	function applyRatingStyle(style, savePreference = true) {
+        console.log(`Applying rating style: ${style}`);
+        if (savePreference) {
+            localStorage.setItem(LOCAL_STORAGE_RATING_STYLE_KEY, style);
+            console.log(`Saved rating style preference: ${style}`);
+        }
+        // If game details are currently displayed, re-render the rating UI
+        if (currentGameRating.gameId !== null) {
+             const ratingContainer = resultsDiv.querySelector('#game-rating-container');
+             if(ratingContainer) {
+                 renderRatingUI(ratingContainer, style, currentGameRating.value);
+             }
+        }
+    }
+	
 	function loadSettings() {
 		// NOTE: We call loadLocalFonts() at the end of DOMContentLoaded now,
         // so it runs *before* this most of the time.
@@ -498,10 +527,49 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                  if (defaultTextRadio) defaultTextRadio.checked = true;
             }
             
+			      
+			// --- Load Rating Display Style ---
+            const savedRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY);
+            const defaultRatingStyle = 'off'; // Define the default value
+            let ratingStyleToApply = savedRatingStyle || defaultRatingStyle; // Use saved or default
+
+            // Validate the style against available options
+             const validRatingStyles = Array.from(ratingStyleGroup.querySelectorAll('input[name="ratingStyle"]')).map(radio => radio.value);
+             if (!validRatingStyles.includes(ratingStyleToApply)) {
+                 console.warn(`Saved rating style "${ratingStyleToApply}" is invalid. Resetting to default "${defaultRatingStyle}".`);
+                 ratingStyleToApply = defaultRatingStyle;
+                 localStorage.removeItem(LOCAL_STORAGE_RATING_STYLE_KEY); // Remove invalid value
+             }
+
+            applyRatingStyle(ratingStyleToApply, false); // Apply style setting (e.g., hide/show container potentially)
+
+            // Update radio button state
+            const currentRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${ratingStyleToApply}"]`);
+            if (currentRatingRadio) {
+                currentRatingRadio.checked = true; // Check the correct radio
+            } else {
+                 // --- FALLBACK LOGIC ---
+                 console.error(`Could not find rating style radio button for value: "${ratingStyleToApply}". Defaulting check state to '${defaultRatingStyle}'.`);
+                 // Find the radio button corresponding to the default style
+                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
+                 if (defaultRatingRadio) {
+                      defaultRatingRadio.checked = true; // Check the default radio
+                 } else {
+                      console.error(`CRITICAL: Could not even find the default rating style radio ('${defaultRatingStyle}')!`);
+                 }
+                 // Ensure the actual applied style matches the fallback default
+                 applyRatingStyle(defaultRatingStyle, false);
+                 // --- END FALLBACK LOGIC ---
+            }
+            // --- End Rating Style Load ---
+
+    
+            
+			
 			// --- Update Log ---
             const finalLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
             const finalTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
-            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${savedFont || 'Default'}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}', StoreLinks='${storeLinksAreEnabled}'`);
+            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${savedFont || 'Default'}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}', StoreLinks='${storeLinksAreEnabled}',RatingStyle='${ratingStyleToApply}'`);
 
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
@@ -744,10 +812,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'atari5200.png';
 		} else if (nameLower.includes('atari')) { // General fallback for atari
             return basePath + 'atari.png';
-		} else if (nameLower.includes('amiga') || nameLower.includes('Commodore Amiga')) { // General fallback for amiga
-            return basePath + 'amiga.png';
 		} else if (nameLower.includes('amiga cd32')) { 
             return basePath + 'cd32.png';
+		} else if (nameLower.includes('amiga') || nameLower.includes('Commodore Amiga')) { // General fallback for amiga
+            return basePath + 'amiga.png';
 		} else if (nameLower.includes('sega dreamcast') || nameLower.includes('dreamcast')) { 
             return basePath + 'dreamcast.png';
 		} else if (nameLower.includes('master system') || nameLower.includes('sega master system')) { 
@@ -776,6 +844,126 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         return basePath + 'default.png';
     }
 
+	// --- NEW: Rating UI Rendering and Handling ---
+
+    /**
+     * Renders the appropriate rating input/display based on style and value.
+     * @param {HTMLElement} container - The div to render into.
+     * @param {string} style - 'stars', 'percent', 'score', or 'off'.
+     * @param {number | null} currentValue - The current rating value (e.g., 3 for stars, 75 for percent/score).
+     */
+    function renderRatingUI(container, style, currentValue) {
+        container.innerHTML = ''; // Clear previous content
+		
+
+        if (style === 'off') {
+            console.log("Rating display is off.");
+            container.classList.add('rating-off');
+			//container.style.display = 'none'; // Hide the container
+            return;
+        } else {
+             container.style.display = 'flex'; // Ensure container is visible
+        }
+
+        switch (style) {
+            case 'stars':
+                const starContainer = document.createElement('div');
+                starContainer.classList.add('rating-stars');
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('span');
+                    star.textContent = '★'; // Unicode star
+                    star.dataset.value = i;
+                    if (currentValue && i <= currentValue) {
+                        star.classList.add('filled');
+                    }
+
+                    star.addEventListener('mouseover', (e) => {
+                        const hoverValue = parseInt(e.target.dataset.value);
+                        const stars = starContainer.querySelectorAll('span');
+                        stars.forEach((s, index) => {
+                             s.classList.toggle('hover', index < hoverValue);
+                        });
+                    });
+                    starContainer.addEventListener('mouseout', () => {
+                         starContainer.querySelectorAll('span').forEach(s => s.classList.remove('hover'));
+                    });
+
+                    star.addEventListener('click', (e) => {
+                        const clickedValue = parseInt(e.target.dataset.value);
+                        // If clicking the same star again, clear rating (optional)
+                        if (clickedValue === currentGameRating.value) {
+                            currentGameRating.value = null;
+                        } else {
+                             currentGameRating.value = clickedValue;
+                        }
+                        console.log("Star rating set to:", currentGameRating.value);
+                        renderRatingUI(container, style, currentGameRating.value); // Re-render to show change
+                    });
+                    starContainer.appendChild(star);
+                }
+                container.appendChild(starContainer);
+                break;
+
+            case 'percent':
+            case 'score':
+                const inputContainer = document.createElement('div');
+                inputContainer.classList.add('rating-input-container');
+                const numInput = document.createElement('input');
+                numInput.type = 'number';
+                const maxValue = (style === 'score' ? 9999 : 100); 
+                numInput.min = 0;
+                numInput.max = maxValue;
+                numInput.value = (currentValue !== null && currentValue >= 0 && currentValue <= maxValue) ? currentValue : '';
+                numInput.classList.add('rating-input');
+                 // --- ADD Specific Class ---
+                if (style === 'score') {
+                    numInput.classList.add('rating-input-score');
+                    numInput.placeholder = `0`;
+                } else { // percent
+                    numInput.classList.add('rating-input-percent');
+                    numInput.placeholder = `%`;
+                }
+                // --- END ADD ---
+
+
+                numInput.addEventListener('input', (e) => {
+                    let val = parseInt(e.target.value);
+                     if (isNaN(val) || val < 0) val = null;
+                     else if (val > maxValue) val = maxValue; // Use maxValue
+
+                     e.target.value = (val === null) ? '' : val;
+                     currentGameRating.value = val;
+                     console.log(`${style} rating set to:`, currentGameRating.value);
+                });
+                numInput.addEventListener('change', (e) => { // Final validation
+                    let val = parseInt(e.target.value);
+                     if (isNaN(val) || val < 0) val = null;
+                     else if (val > maxValue) val = maxValue; // Use maxValue
+                    e.target.value = (val === null) ? '' : val;
+                    currentGameRating.value = val;
+                });
+
+
+                 inputContainer.appendChild(numInput);
+
+                if (style === 'percent') {
+                    const percentSign = document.createElement('span');
+                    percentSign.textContent = '%';
+                    percentSign.classList.add('percent-sign');
+                    inputContainer.appendChild(percentSign);
+                } else if (style === 'score') {
+                    // --- ADD "Score" Label ---
+                    const scoreLabel = document.createElement('span');
+                    scoreLabel.textContent = 'Score';
+                    scoreLabel.classList.add('score-label');
+                    inputContainer.appendChild(scoreLabel);
+                    // --- END ADD ---
+                }
+                container.appendChild(inputContainer);
+                break;
+        }
+    }
+
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
         console.log("--- searchGamesList function CALLED ---"); // <<<--- DEBUG LOG
@@ -787,7 +975,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return;
         }
         console.log(`searchGamesList: Searching for "${gameName}"`);
-
+		
+		currentGameRating = { gameId: null, value: null };
         resultsDiv.innerHTML = '<p class="info-message loading">Searching IGDB...</p>';
 		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container on new search
         searchButton.disabled = true;
@@ -823,6 +1012,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         function displaySearchResultsList(results) { // results is now {id, name, year, type, platforms: [name1,...]}
         resultsDiv.innerHTML = '';
         obsButtonContainer.innerHTML = '';
+		currentGameRating = { gameId: null, value: null }; // <<< Reset rating when showing list
+		
         const instruction = document.createElement('p');
         instruction.classList.add('info-message');
         instruction.textContent = 'Select a game to view details:';
@@ -900,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     async function fetchGameDetails(gameId) {
         resultsDiv.innerHTML = '<p class="info-message loading">Loading details...</p>';
 		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container while loading details
+		currentGameRating = { gameId: null, value: null }; // <<< Reset rating before fetching NEW details
         searchButton.disabled = true;
         try {
             const response = await fetch(`${API_BASE_URL}/details/${gameId}`);
@@ -929,6 +1121,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         resultsDiv.innerHTML = ''; // Clear previous results
 		obsButtonContainer.innerHTML = ''; // <-- Clear button container again just before adding
 		
+		 // --- Set CURRENT game ID and reset value ---
+        currentGameRating = { gameId: data.id, value: null }; // Reset rating
+        console.log(`Displaying details for Game ID: ${currentGameRating.gameId}. Rating reset.`);
+		
 		// --- Re-apply platform logo size variable ---
         // Ensures the variable is set before elements using it are created in this scope
         const currentLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
@@ -956,14 +1152,20 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         developerElement.innerHTML = `<strong>${data.developer || 'Unknown'}</strong>`;
         detailsDiv.appendChild(developerElement);
 
-        const releaseElement = document.createElement('p'); // Release Date
+		const releaseElement = document.createElement('p'); // Release Date
         releaseElement.innerHTML = `<strong>${data.releaseDate || 'N/A'}</strong>`;
         detailsDiv.appendChild(releaseElement);
 
-        //const platformsElement = document.createElement('p'); // Platforms Header
-        //platformsElement.innerHTML = '<strong>Platforms:</strong>';
-        //detailsDiv.appendChild(platformsElement);
-
+		// Create Rating Container
+        const ratingContainer = document.createElement('div');
+        ratingContainer.id = 'game-rating-container';
+        detailsDiv.appendChild(ratingContainer); // Appended AFTER release date		
+		
+		// --- Add Platforms Header (Optional but good for clarity) ---
+        //const platformsHeader = document.createElement('p');
+        //platformsHeader.innerHTML = '<strong>Platforms:</strong>';
+        //detailsDiv.appendChild(platformsHeader);
+		
         // Platform List Creation (with local logos)
          if (data.platforms && data.platforms.length > 0) {
             const platformList = document.createElement('ul');
@@ -999,8 +1201,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         gameInfoDiv.appendChild(imgElement);
         gameInfoDiv.appendChild(detailsDiv);
         resultsDiv.appendChild(gameInfoDiv); // Add main info to the page
-
-        // --- Create and Add "Save for OBS" Button to its own container ---
+		
+		// --- Create and Add "Save for OBS" Button to its own container ---
         const saveButton = document.createElement('button');
         saveButton.id = 'save-obs-button';
         saveButton.type = 'button';
@@ -1037,41 +1239,27 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         let hasAnyStoreLink = false;
         storeLinksContainer.innerHTML = ''; // Clear initially
 		
+		// --- Render Initial Rating UI ---
+        const currentRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
+        renderRatingUI(ratingContainer, currentRatingStyle, currentGameRating.value); // Render into the correct container
+		
 		// 1. Add buttons for links found directly on IGDB (Steam/Epic)
+        storeLinksContainer.innerHTML = ''; // Clear initially
         if (data.igdbStoreLinks && data.igdbStoreLinks.length > 0) {
-             console.log(`Adding ${data.igdbStoreLinks.length} buttons from IGDB data.`);
-             data.igdbStoreLinks.forEach(link => {
+             console.log(`Adding ${data.igdbStoreLinks.length} store buttons from IGDB data.`);
+             data.igdbStoreLinks.forEach(link => { // link is {name, url}
                  let logoSrc = 'images/default_store.png';
                  if (link.name === 'Steam') logoSrc = 'images/steam_logo.png';
                  else if (link.name === 'Epic Games') logoSrc = 'images/epic_logo.png';
+                 else if (link.name === 'GOG') logoSrc = 'images/gog_logo.png';
+				 else if (link.name === 'itch.io') logoSrc = 'images/itch_logo.png'; 
+                 // Add else if for other stores if needed
+
                  addStoreButton(storeLinksContainer, link.name, link.url, logoSrc);
-                 hasAnyStoreLink = true;
              });
         } else {
-            console.log("No direct Steam/Epic links found in IGDB data.");
+            console.log("No direct store links (Steam/Epic/GOG) found in IGDB data.");
         }
-
-        // 2. Conditionally check GOG store via API
-        const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
-
-        if (shouldShowStores) {
-            // Pass flag indicating if other buttons already exist to manage loading message
-            checkAndAddGogButton(data.name, storeLinksContainer, hasAnyStoreLink);
-        } else {
-             console.log("Store links check disabled by user setting.");
-             // If no IGDB links were found AND the check is disabled, the container remains empty.
-             // If IGDB links *were* found, they remain visible even if GOG check is off.
-        }
-		
-        // --- End Populate Store Links ---
-
-
-		
-        // --- Always check GOG store ---
-        //console.log("Initiating GOG store check (visibility controlled by CSS)...");
-        //checkGogStore(data.name, storeLinksContainer); // Call unconditionally
-        // --- End GOG Check ---
-        
 		
 		// --- Apply Platform Text Visibility Class based on current setting --- 
         const textIsVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
@@ -1080,46 +1268,35 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 		
     } // End displayGameDetails
 
-      
-    /**
-     * Function: Checks GOG store and adds button if found.
-     * @param {string} gameName - The name of the game to check.
-     * @param {HTMLElement} container - The container element to add the button to.
-	 * @param {boolean} otherLinksExist - Flag to control loading message display
+	/**
+     * Generates static HTML representation of the rating.
+     * @param {string} style - 'stars', 'percent', 'score'
+     * @param {number | null} value - The rating value
+     * @returns {string} - HTML string or empty string
      */
-    async function checkAndAddGogButton(gameName, container, otherLinksExist) {
-        console.log(`Checking GOG API for "${gameName}"...`);
-        let loadingIndicator = null;
-        // Only show loading if no other buttons are there yet
-        if (!otherLinksExist) {
-            container.innerHTML = `<p class="info-message store-loading">Checking GOG.com...</p>`;
-            loadingIndicator = container.querySelector('.store-loading');
+    function getStaticRatingHtml(style, value) {
+        if (value === null || style === 'off') return '';
+        
+		let displayValue = '';
+        switch (style) {
+            case 'stars':
+                const filledStars = value || 0; const emptyStars = 5 - filledStars;
+                displayValue = `<span class="stars">${'★'.repeat(filledStars)}</span><span class="stars-empty">${'☆'.repeat(emptyStars)}</span>`;
+                break;
+            case 'percent':
+                displayValue = `${value}%`;
+                break;
+            case 'score':
+                // --- ADD "Score" Suffix ---
+                displayValue = `${value} Score`;
+                // --- END ADD ---
+                break;
+            default: return '';
         }
-
-        const gogCheckUrl = `${API_BASE_URL}/checkGog?gameName=${encodeURIComponent(gameName)}`;
-
-        try {
-            const response = await fetch(gogCheckUrl);
-            const result = await response.json();
-
-            // Clear loading indicator if it exists
-            if (loadingIndicator) loadingIndicator.remove();
-
-            if (response.ok && result.found && result.url) {
-                addStoreButton(container, 'GOG', result.url, 'images/gog_logo.png');
-            } else {
-                 console.log(`GOG check for "${gameName}" returned found: false or error.`);
-                 if (!response.ok) console.error(`GOG check failed: ${response.status}`, result.error || '');
-            }
-        } catch (error) {
-            console.error("Error during GOG store check fetch:", error);
-            if (loadingIndicator) loadingIndicator.remove();
-            // Optionally add a specific error message for GOG failure
-            // container.innerHTML += `<p class="error-message store-error">Could not check GOG.com.</p>`;
-        }
-    } // End checkAndAddGogButton
-
-      
+        // Keep wrapper span
+        return `<span class="static-rating">${displayValue}</span>`;
+    }
+     
 	 /**
      * Helper: Creates and adds a store button/link.
      * @param {HTMLElement} container - The parent element.
@@ -1177,148 +1354,224 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         container.appendChild(link);
     } // End addStoreButton
 
-	// --- Function to Save HTML for OBS (Embeds Font Info) ---
-    async function saveResultsHtml(gameName) { // Function is async
-        console.log(`Generating HTML for "${gameName}" with font embedding...`);
+          // --- Function to Save HTML for OBS ---
+    async function saveResultsHtml(gameName) {
+        console.log(`OBS SAVE: Starting generation for "${gameName}"`);
 
-        // --- Step 0: Check Store Links Visibility Setting ---
-        const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true'); // Use correct key
-        console.log(`Store links visibility for saved HTML: ${shouldShowStores}`);
+        // Wrap core logic in rAF to wait for rendering updates
+        requestAnimationFrame(async () => {
+            try {
+                // --- Step 0: Get current settings needed for generation ---
+                const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
+                const ratingValue = currentGameRating.value; // Use current in-memory rating
+                const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
+                console.log(`OBS SAVE: Rating Style='${ratingStyle}', Value=${ratingValue}, ShowStores=${shouldShowStores}`);
 
-        // --- Step 1: Clone results content ---
-        const resultsClone = resultsDiv.cloneNode(true);
+				// --- Step 0.5: Get Platform Text Visibility State ---
+                const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
+                console.log(`OBS SAVE: Platform text hidden state: ${isPlatformTextHidden}`);
 
-        // --- Step 1a: Conditionally Remove Store Links Container from Clone ---
-        if (!shouldShowStores) {
-            const storeContainerInClone = resultsClone.querySelector('.store-links-container');
-            if (storeContainerInClone) {
-                console.log("Store links check is OFF - Removing store links container from saved HTML.");
-                storeContainerInClone.remove(); // Remove the entire container
-            }
-        } else {
-            // Optional: Clean up loading message if it's still there (shouldn't be usually)
-            const loadingInClone = resultsClone.querySelector('.store-links-container .store-loading');
-             if (loadingInClone) loadingInClone.remove();
-        }
-        // --- End Conditional Removal ---
+                // --- Step 1: Clone results content & Modify for static output ---
+                console.log("OBS SAVE: Cloning #results div");
+                const resultsClone = resultsDiv.cloneNode(true);
 
-
-        // --- Step 1b: Adjust image paths (Keep this logic) ---
-        const imagesToAdjust = resultsClone.querySelectorAll('img');
-        imagesToAdjust.forEach(img => {
-            const currentSrc = img.getAttribute('src');
-            if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) {
-                img.src = '../' + currentSrc;
-            }
-        });
-        const buttonInClone = resultsClone.querySelector('#save-obs-button'); // Should not be inside #results
-        if (buttonInClone) buttonInClone.remove();
-        const resultsContent = resultsClone.innerHTML; // Get HTML *after* potential removal
-
-
-        // --- Step 2: Get current theme ---
-        const currentTheme = document.body.dataset.theme || 'light';
-
-        // --- Step 3: Fetch and process style.css ---
-        let processedCss = "/* Styles could not be loaded */"; // Fallback
-        try {
-            console.log("Fetching style.css for embedding...");
-            const cssResponse = await fetch('style.css');
-            if (cssResponse.ok) {
-                let cssText = await cssResponse.text();
-                console.log("Successfully fetched style.css.");
-
-                // --- Step 3a: Adjust local font path within the CSS text ---
-                const localFontFamily = 'pxSans'; // YOUR font-family name
-                const localFontFilename = 'pxSans.woff'; // YOUR .woff filename
-
-                // UPDATED Regex: Matches src: url( , optional quotes, /fonts/, filename, optional quotes, )
-                // Captures the part BEFORE /fonts/ (group 1) and AFTER filename (group 3)
-                const fontPathRegex = new RegExp(`(src:\\s*url\\(['"]?)\\/fonts\\/${localFontFilename}(['"]?\\))`, 'i');
-
-                if (cssText.includes(`font-family: '${localFontFamily}'`) || cssText.includes(`font-family: ${localFontFamily}`)) {
-                    // UPDATED Replacement: Uses group 1, adds ../fonts/filename, uses group 3
-                    cssText = cssText.replace(fontPathRegex, `$1../fonts/${localFontFilename}$2`);
-                    console.log(`Adjusted local font path in embedded CSS for ${localFontFamily}.`);
-                } else {
-                    console.log(`Local font ${localFontFamily} @font-face not found in CSS, skipping path adjustment.`);
+                // 1a: Handle Rating Display
+                const ratingContainerInClone = resultsClone.querySelector('#game-rating-container');
+                if (ratingContainerInClone) {
+                    const staticRatingHtml = getStaticRatingHtml(ratingStyle, ratingValue); // Generate static HTML
+                    if (staticRatingHtml) {
+                        console.log("OBS SAVE: Injecting static rating HTML.");
+                        ratingContainerInClone.innerHTML = staticRatingHtml; // Replace input with static HTML
+                        ratingContainerInClone.removeAttribute("style"); // Remove potential inline display style if set by JS
+                        ratingContainerInClone.classList.remove('rating-off'); // Ensure visible if content present
+                    } else {
+                        console.log("OBS SAVE: Removing rating container (off or no value).");
+                        ratingContainerInClone.remove();
+                    }
                 }
-                processedCss = cssText;
 
-            } else {
-                console.error(`Failed to fetch style.css: ${cssResponse.status}`);
-            }
-        } catch (error) {
-            console.error("Error fetching or processing style.css:", error);
+                // 1b: Handle Store Links Display
+                const storeContainerInClone = resultsClone.querySelector('.store-links-container');
+                if (storeContainerInClone) {
+                    if (!shouldShowStores) {
+                        console.log("OBS SAVE: Removing store links container (setting is off).");
+                        storeContainerInClone.remove();
+                    } else {
+                        // Clean up loading message just in case
+                        const loadingInClone = storeContainerInClone.querySelector('.store-loading');
+                        if (loadingInClone) loadingInClone.remove();
+                    }
+                }
+
+                // 1c: Adjust local image paths
+                console.log("OBS SAVE: Adjusting local image paths...");
+                const imagesToAdjust = resultsClone.querySelectorAll('img');
+                imagesToAdjust.forEach(img => {
+                    const currentSrc = img.getAttribute('src'); // Read original src
+                    if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) {
+                        img.setAttribute('src', '../' + currentSrc); // Set adjusted src
+                    }
+                });
+
+                // 1d: Get final HTML content
+                const resultsContent = resultsClone.innerHTML;
+
+
+                // --- Step 2: Fetch and clean base CSS ---
+                let baseCss = "/* Base styles error */";
+                try {
+                    console.log("OBS SAVE: Fetching style.css...");
+                    const cssResponse = await fetch('style.css');
+                    if (cssResponse.ok) {
+                        let cssText = await cssResponse.text();
+                        console.log("OBS SAVE: Cleaning style.css...");
+                        // Remove Themes
+                        const themeBlockRegex = /body\[data-theme=(['"]).*?\1\]\s*\{[\s\S]*?\}/gi;
+                        cssText = cssText.replace(themeBlockRegex, '');
+                        // Remove @font-face
+                        const fontFaceRegex = /@font-face\s*\{[\s\S]*?\}/gi;
+                        cssText = cssText.replace(fontFaceRegex, '');
+                         // Remove original :root
+                         const rootBlockRegex = /:root\s*\{[\s\S]*?\}/i;
+                         cssText = cssText.replace(rootBlockRegex, '');
+                         baseCss = cssText.trim();
+                         console.log("OBS SAVE: CSS cleaned.");
+                    } else { throw new Error(`Fetch failed: ${cssResponse.status}`); }
+                } catch (error) { console.error("OBS SAVE: Error fetching/cleaning style.css:", error); }
+
+
+                // --- Step 3: Get Computed Variable Values ---
+                console.log("OBS SAVE: Getting computed styles from BODY...");
+                let appliedVariablesString = "";
+                const varNames = [
+                     '--bg-color', '--element-bg', '--text-color', '--text-muted',
+                     '--border-color', '--border-light', '--primary-color', '--primary-hover',
+                     '--accent-color', '--accent-darker', '--error-color', '--body-font',
+                     '--platform-logo-size'
+                ];
+                const computedBodyStyle = getComputedStyle(document.body); // Read from body
+				
+                // --- Declare activeFontValue here ---
+                let activeFontValue = '-apple-system, sans-serif'; // Provide a safe default
+
+                varNames.forEach(varName => {
+                     const value = computedBodyStyle.getPropertyValue(varName).trim();
+                     if (value) {
+                         // Capture the font value when iterating
+                         if (varName === '--body-font') {
+                             activeFontValue = value; // Assign the computed font value
+                         }
+                         console.log(` > Computed ${varName} = ${value}`);
+                         appliedVariablesString += `    ${varName}: ${value};\n`;
+                     } else { console.warn(`Could not get computed value for ${varName}`); }
+                });
+                // --- activeFontValue is now set correctly ---
+
+                // --- Step 4: Determine Required Font Definitions (REVISED LOGIC) ---
+                let fontDefinitionsHtml = ""; // This will hold the <link> or <style> tags
+
+                console.log(`OBS SAVE: Determining font definition for active font: ${activeFontValue}`);
+
+                // Fetch the font list JSON to check against local fonts
+                let localFontsData = [];
+                let isLocalFontActive = false;
+                try {
+                    const fontListResponse = await fetch('fonts/fonts.json');
+                    if (fontListResponse.ok) {
+                        localFontsData = await fontListResponse.json();
+                        if (!Array.isArray(localFontsData)) localFontsData = []; // Ensure it's an array
+                    } else { console.warn("OBS SAVE: Could not fetch fonts.json to check local fonts."); }
+                } catch (e) { console.error("OBS SAVE: Error fetching fonts.json", e); }
+
+				// Check if the active font matches one defined in fonts.json
+                const activeLocalFontInfo = localFontsData.find(font => activeFontValue === font.cssValue);
+
+                if (activeLocalFontInfo) {
+                    // --- It's a local font ---
+                    /* ... Generate localFontDefinition @font-face style block ... */
+                     const localFontFamily = activeLocalFontInfo.name;
+                     const localFontFilename = activeLocalFontInfo.filename;
+                     let format = 'woff'; if (localFontFilename.endsWith('.woff2')) format = 'woff2'; else if (localFontFilename.endsWith('.ttf')) format = 'truetype'; else if (localFontFilename.endsWith('.otf')) format = 'opentype';
+                     fontDefinitionsHtml = `<style id="local-font-face">@font-face { font-family: '${localFontFamily}'; src: url('../fonts/${localFontFilename}') format('${format}'); }</style>`;
+                    console.log(`OBS SAVE: Including @font-face for local font: ${localFontFamily}`);
+                }
+                // Check for Google Fonts
+                else if (!activeFontValue.includes('-apple-system')) {
+                    /* ... Find and assemble Google Font <link> tags into fontDefinitionsHtml ... */
+                    const googlePreconnect1 = document.querySelector("link[rel='preconnect'][href='https://fonts.googleapis.com']");
+                    const googlePreconnect2 = document.querySelector("link[rel='preconnect'][href='https://fonts.gstatic.com']");
+                    const googleCssLink = document.querySelector("link[rel='stylesheet'][href^='https://fonts.googleapis.com/css2']");
+                    let linksToAdd = [];
+                    if (googlePreconnect1) linksToAdd.push(googlePreconnect1.outerHTML);
+                    if (googlePreconnect2) linksToAdd.push(googlePreconnect2.outerHTML);
+                    if (googleCssLink) linksToAdd.push(googleCssLink.outerHTML);
+                    if (linksToAdd.length > 0) { fontDefinitionsHtml = linksToAdd.join('\n    '); console.log("OBS SAVE: Including Google Font Tags."); } 
+					else {
+                        console.log("OBS SAVE: Non-local/non-system font detected but required Google <link> tags not found.");
+                        fontDefinitionsHtml = '<!-- Google Font link tags not found -->';
+                    }
+                } else {
+                    // --- It's the System Default font ---
+                    console.log("OBS SAVE: System default font active, no extra definition needed.");
+                    fontDefinitionsHtml = '<!-- System default font active -->';
+                }
+                
+                // --- Step 5: Construct the final HTML ---
+                const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGet Result - ${gameName}</title>
+    ${fontDefinitionsHtml} <!-- Embed Google Link OR Local @font-face -->
+    <style>
+        /* Embedded Base Styles (Themes, :root, @font-face Removed) */
+        ${baseCss}
+
+        /* Inject Computed Variables into :root */
+        :root {
+${appliedVariablesString}
         }
 
-        // --- Step 4: Get current applied variable values ---
-        let appliedVariables = "";
-        const varNames = [ // Include font variable
-             '--bg-color', '--element-bg', '--text-color', '--text-muted',
-             '--border-color', '--border-light', '--primary-color', '--primary-hover',
-             '--accent-color', '--accent-darker', '--error-color', '--body-font'
-        ];
-        const computedStyle = getComputedStyle(document.body);
-        varNames.forEach(varName => {
-             const value = computedStyle.getPropertyValue(varName).trim();
-             if (value) { appliedVariables += `    ${varName}: ${value};\n`; }
-        });
-
-        // --- Step 5: Get the Google Font Link from the main page ---
-        // Find the link element used for Google Fonts in the current document
-        // IMPORTANT: Adjust selector if your Google Font link has a specific ID or attribute
-        const googleFontLinkElement = document.querySelector("link[href^='https://fonts.googleapis.com']");
-        const googleFontLinkTag = googleFontLinkElement ? googleFontLinkElement.outerHTML : '<!-- Google Font link not found -->';
-        console.log("Including Google Font Tag:", googleFontLinkTag);
-
-
-        // --- Step 6: Construct the full HTML structure ---
-        const fullHtml = `<!DOCTYPE html>
-		<html lang="en">
-		<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>GameGet Result - ${gameName}</title>
-		<!-- Include Google Font Link -->
-		${googleFontLinkTag}
-		<style>
-        /* --- Embedded Main Styles (with adjusted local font path) --- */
-        ${processedCss}
-
-        /* --- Applied Theme/Custom Variables --- */
-        body {
-		${appliedVariables}
-        }
-
-        /* --- OBS Specific Overrides --- */
-        body { margin: 0; padding: 0; }
-        #results { border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
-        #results button { display: none !important; }
-		</style>
-		</head>
-		<body data-theme="${currentTheme}">
-		<!-- Results div content with adjusted image paths -->
-		<div id="results">
+        /* OBS Specific Overrides */
+        body { position: relative; padding: 0;}
+        #results { position: relative; border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        /* Hide interactive elements specifically for OBS */
+        #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
+        #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1em !important; z-index: auto; }
+		#game-rating-container > * {  font-size: 1.8em !important; font-weight: bold; }
+		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
+	</style>
+</head>
+<body class="${isPlatformTextHidden ? 'platform-text-hidden' : ''}">
+    <div id="results">
         ${resultsContent}
-		</div>
-		</body>
-		</html>`;
+    </div>
+</body>
+</html>`;
 
-        // --- Step 7: Create Blob and Download Link ---
-        const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
-        link.download = `${safeGameName}_GameGet.html`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+                // --- Step 6: Create Blob and Download Link ---
+                const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
+                link.download = `${safeGameName}_GameGet.html`;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log(`Download triggered for ${link.download}.`);
 
-        console.log(`Download triggered for ${link.download}. Font info embedded.`);
-    } 
+            } catch (saveError) {
+                console.error("Error during saveResultsHtml execution:", saveError);
+                alert("An error occurred while generating the HTML file.");
+            }
+        }); // End requestAnimationFrame
+    } // End saveResultsHtml
+
+    
 
     // Initial Setup
     loadLocalFonts().then(() => { // Load local fonts first
@@ -1328,7 +1581,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     }).catch(err => {
          console.error("Error during initial font load:", err);
          // Still try to load other settings even if fonts fail
-         loadSettings(); // Load saved settings on page load
+		 
+    loadSettings(); // Load saved settings on page load
 	console.log("Initial setup complete.");
 	});
 
