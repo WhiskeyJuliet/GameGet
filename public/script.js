@@ -1144,6 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
         const nameElement = document.createElement('h2'); // Game Name H2
         nameElement.textContent = data.name;
+        nameElement.id = 'game-title';
         detailsDiv.appendChild(nameElement);
 
 		const developerElement = document.createElement('p');
@@ -1154,6 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
 		const releaseElement = document.createElement('p'); // Release Date
         releaseElement.innerHTML = `<strong>${data.releaseDate || 'N/A'}</strong>`;
+        releaseElement.id = 'game-release-date';
         detailsDiv.appendChild(releaseElement);
 
 		// Create Rating Container
@@ -1234,7 +1236,40 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         // --- Append button to the DEDICATED container ---
         obsButtonContainer.appendChild(saveButton);
         // --- End Save Button ---
+
+		// --- Create and Add "Open link for OBS browser source" Button to its own container ---
+        const browserSourceButton = document.createElement('button');
+        browserSourceButton.id = 'open-browser-source-button';
+        browserSourceButton.type = 'button';
 		
+        // ... (create saveIcon, saveText) ...
+		const browserSourceIcon = document.createElement('img');
+        browserSourceIcon.src = 'images/floppy.png'; // Change this to an image of a chain?
+        browserSourceIcon.alt = 'Open browser source Icon';
+        // Size is controlled by CSS, but setting here helps layout consistency
+        browserSourceIcon.width = 24;
+        browserSourceIcon.height = 24;
+        browserSourceIcon.onerror = () => { // Handle if button icon fails to load
+             console.error("Failed to load Open browser source Icon: images/floppy.png");
+             browserSourceIcon.remove(); // Remove broken image
+        };
+
+        const browserSourceText = document.createElement('span');
+        browserSourceText.textContent = 'Open link for OBS browser source';
+		
+         // --- Append BOTH icon and text to the button ---
+        browserSourceButton.appendChild(browserSourceIcon);
+        browserSourceButton.appendChild(browserSourceText);
+        // --- End Append ---
+
+        // Add click listener
+        browserSourceButton.addEventListener('click', () => {
+            openBrowserSource();
+        });
+        // --- Append button to the DEDICATED container ---
+        obsButtonContainer.appendChild(browserSourceButton);
+        // --- End Save Button ---
+        
 		// --- Populate Store Links ---
         let hasAnyStoreLink = false;
         storeLinksContainer.innerHTML = ''; // Clear initially
@@ -1570,6 +1605,43 @@ ${appliedVariablesString}
             }
         }); // End requestAnimationFrame
     } // End saveResultsHtml
+
+    function openBrowserSource(){
+        // Grab all the necessary components for the URL
+        const gameTitle = document.querySelector('#game-title').textContent;
+        const gameDeveloper = document.querySelector('.game-developer').textContent;
+        const gameReleaseDate = document.querySelector('#game-release-date').textContent;
+        const gameBoxArt = document.querySelector('.game-info img')?.src || '';
+        const gameRatingType = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || '';
+        let gameRatingValue = null;
+        switch (gameRatingType) {
+            case 'stars':
+                const filledStars = document.querySelectorAll('.rating-stars .filled');
+                gameRatingValue = filledStars.length > 0 ? filledStars.length : null;
+                break;
+            case 'percent':
+            case 'score':
+                const ratingInput = document.querySelector('input.rating-input');
+                gameRatingValue = ratingInput ? ratingInput.value : null;
+                break;
+        }
+        const gamePlatforms = Array.from(document.querySelectorAll('.platform-name-text')).map(span => span.textContent.trim());
+        
+        queryParams = new URLSearchParams({
+            title: gameTitle,
+            developer: gameDeveloper,
+            releaseDate: gameReleaseDate,
+            boxArt: gameBoxArt,
+            ratingType: gameRatingValue !== null ? gameRatingType : undefined, // only include if Rating isn't null
+            rating: gameRatingValue !== null ? gameRatingValue : 0 // only include if Rating isn't null
+        });
+
+        // Add platforms individually to the query string
+        gamePlatforms.forEach(platform => {
+            queryParams.append('platform', platform);
+        });
+        window.open(`/game?${queryParams}`, '_blank');
+    }
 
     
 
