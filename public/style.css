@@ -233,7 +233,7 @@ a:hover {
 
 
 /* Styles for the button itself */
-#save-obs-button {
+#save-obs-button, #open-browser-source-button {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -247,6 +247,7 @@ a:hover {
     font-size: 0.95rem;
     font-weight: 500;
     transition: background-color 0.2s ease, transform 0.1s ease;
+    margin: 0 0.25em;
 }
 
 #save-obs-button:hover {
