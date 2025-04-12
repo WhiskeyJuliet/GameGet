@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http'); // Or https if needed
 const fs = require('fs');
+const ejs = require('ejs');
 // const stringSimilarity = require('string-similarity'); // REMOVED not needed because switching soley to using igdb store links.
 
 const app = express();
@@ -52,8 +53,56 @@ async function getTwitchAccessToken() {
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-      
-      
+app.get('/game', (req, res) => {
+    // Data to be passed to the EJS template
+    let data = {
+        game: {
+            // title: "Jetpack",
+            // developer: "Adept Software",
+            // releaseDate: "31 December 1993",
+            // boxArt: "https://images.igdb.com/igdb/image/upload/t_cover_big/co7vxx.jpg",
+            // rating: {
+            //     type: "percent", // stars | percent | score
+            //     value: 69
+            // },
+            // platforms: ["Windows", "DOS", "Wii"]
+            title: "Game title",
+            developer: "Developer",
+            releaseDate: "Release date",
+            boxArt: "https://placehold.co/264x352",
+            rating: {},
+            platforms: []
+        },
+    };
+
+    // Update `data` with query params from the URL
+    // There are more succinct ways to do this, but this is more readable/configurable
+    if (req.query.title) {data.game.title = req.query.title}
+    if (req.query.developer) {data.game.developer = req.query.developer}
+    if (req.query.releaseDate) {data.game.releaseDate = req.query.releaseDate}
+    if (req.query.boxArt) {data.game.boxArt = req.query.boxArt}
+    if (req.query.ratingType) {data.game.rating.type = req.query.ratingType}
+    if (req.query.rating) {data.game.rating.value = req.query.rating}
+
+    // Multiple platforms can be passed, so this ensures platform is always an array
+    if (req.query.platform) {
+        if (typeof req.query.platform === 'string') {
+            data.game.platforms = [req.query.platform];
+        } else {
+            data.game.platforms = req.query.platform;
+        }
+    }
+
+    // Render the EJS template under /views/game.ejs
+    ejs.renderFile(path.join(__dirname, 'views', 'game.ejs'), data, (err, str) => {
+        if (err) {
+            console.error("Error rendering EJS template:", err);
+            return res.status(500).send("Error rendering template.");
+        }
+        res.send(str);
+    });
+});
+
 // --- API Endpoint for Searching (returns list with year) ---
 app.get('/search', async (req, res) => {
     const gameQuery = req.query.gameName;
