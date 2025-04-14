@@ -2,17 +2,20 @@
   {
     "name": "pxSans",
     "filename": "pxSans.woff",
-    "cssValue": "'pxSans', sans-serif"
+    "cssValue": "'pxSans', sans-serif",
+	"ascentOverride": "105%"
   },
   {
     "name": "SystemTrue",
     "filename": "SystemTrue.ttf",
-    "cssValue": "'SystemTrue', sans-serif"
+    "cssValue": "'SystemTrue', sans-serif",
+	"ascentOverride": "90%"
   },
   {
     "name": "Monda",
     "filename": "Monda.ttf",
-    "cssValue": "'Monda', sans-serif"
+    "cssValue": "'Monda', sans-serif",
+	"ascentOverride": "120%"
   }
 
 ]

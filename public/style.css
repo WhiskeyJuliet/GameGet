@@ -681,6 +681,20 @@ body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add th
     display: inline-flex; /* Changed from block-level flex on UL */
     align-items: center; /* Vertically center icon and text */
     gap: 6px; /* Space between icon and text */
+	cursor: pointer; /* <<< ADD: Indicate it's clickable */
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* Add transition */
+}
+
+/* Style for the selected/highlighted platform */
+.platform-item-selected {
+    background-color: var(--accent-darker);
+    /* Optionally change text color for better contrast */
+    color: var(--text-color);
+    border-color: var(--border-color); /* Slightly darker border? */
+	padding: 8px 10px 8px 10px;
+	margin-top: -2px;
+	font-size: 1.1rem;
+	line-height: 1.3;
 }
 
 /* Style for the platform logo image (<img>) */

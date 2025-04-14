@@ -2,12 +2,14 @@
   {
     "name": "pxSans",
     "filename": "pxSans.woff",
-    "cssValue": "'pxSans', sans-serif"
+    "cssValue": "'pxSans', sans-serif",
+	"ascentOverride": "105%"
   },
   {
     "name": "Your Font Name",
     "filename": "YourFont.ttf",
     "cssValue": "'Your Font Name', sans-serif"
+
   }
 
 ]

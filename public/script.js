@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
 	// --- Global State ---
     let currentGameRating = { gameId: null, value: null }; // Stores { gameId: 123, value: 4 } or { gameId: 456, value: 85 } etc.
+	let currentPlatformsOrder = []; // Store current platform order
+	let selectedPlatformName = null; // Global state for selected platform name
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
@@ -427,12 +429,26 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                     if (font.filename.endsWith('.woff2')) format = 'woff2';
                     else if (font.filename.endsWith('.ttf')) format = 'truetype';
                     else if (font.filename.endsWith('.otf')) format = 'opentype';
-
+					
+					// --- Check for and add ascent-override ---
+                    let ascentOverrideRule = '';
+                    if (font.ascentOverride && typeof font.ascentOverride === 'string' && font.ascentOverride.trim() !== '') {
+                        // Basic validation: check if it looks like a percentage or number
+                        if (font.ascentOverride.includes('%') || !isNaN(parseFloat(font.ascentOverride))) {
+                             ascentOverrideRule = `\n    ascent-override: ${font.ascentOverride.trim()};`;
+                             console.log(`Adding ascent-override: ${font.ascentOverride.trim()} for ${font.name}`);
+                        } else {
+                             console.warn(`Invalid ascentOverride format for ${font.name}: "${font.ascentOverride}". Skipping.`);
+                        }
+                    }
+                    // --- End ascent-override check ---
+					
+					
                     fontFaceRules += `
 @font-face {
-    font-family: '${font.name}'; /* Use the name from JSON */
-    src: url('/fonts/${font.filename}') format('${format}');
-    /* Add font-weight/style here if defined in JSON */
+    font-family: '${font.name}';
+    src: url('/fonts/${font.filename}') format('${format}');${ascentOverrideRule} /* Add ascent override if defined */
+    /* Add font-weight/style here if needed */
 }
 `;
                     // Add option to dropdown
@@ -906,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         return basePath + 'default.png';
     }
 
-	// --- NEW: Rating UI Rendering and Handling ---
+	// --- Rating UI Rendering and Handling ---
 
     /**
      * Renders the appropriate rating input/display based on style and value.
@@ -1042,6 +1058,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         resultsDiv.innerHTML = '<p class="info-message loading">Searching IGDB...</p>';
 		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container on new search
         searchButton.disabled = true;
+		
+		currentPlatformsOrder = []; // Clear platform order
+        selectedPlatformName = null; // Clear selectio
 
         try {
             console.log("searchGamesList: Fetching from backend...");
@@ -1075,6 +1094,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         resultsDiv.innerHTML = '';
         obsButtonContainer.innerHTML = '';
 		currentGameRating = { gameId: null, value: null }; // <<< Reset rating when showing list
+		
+		currentPlatformsOrder = []; // Clear platform order
+        selectedPlatformName = null; // Clear selection
 		
         const instruction = document.createElement('p');
         instruction.classList.add('info-message');
@@ -1155,6 +1177,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 		obsButtonContainer.innerHTML = ''; // <-- Clear OBS button container while loading details
 		currentGameRating = { gameId: null, value: null }; // <<< Reset rating before fetching NEW details
         searchButton.disabled = true;
+		
+		currentPlatformsOrder = []; // Clear platform order
+        selectedPlatformName = null; // Clear selection
+		
         try {
             const response = await fetch(`${API_BASE_URL}/details/${gameId}`);
             if (!response.ok) {
@@ -1171,7 +1197,78 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     } // End fetchGameDetails
 
-/**
+	      
+// --- Function to Render Platform List ---
+    /**
+     * Clears and rebuilds the platform list UI based on the provided order.
+     * Attaches click listeners for reordering.
+     * @param {HTMLElement} platformListContainer - The UL element.
+     * @param {string[]} platformNames - Array of platform name strings in desired order.
+     */
+    function renderPlatformList(platformListContainer, platformNames) {
+        platformListContainer.innerHTML = ''; // Clear existing list items
+
+        console.log("Rendering platforms:", platformNames, "Selected:", selectedPlatformName); // Log state
+
+        if (!platformNames || platformNames.length === 0) return;
+
+        platformNames.forEach((platformName, index) => {
+            const li = document.createElement('li');
+            li.classList.add('platform-item');
+            li.dataset.platformName = platformName;
+
+            // Add selected class using the GLOBAL selectedPlatformName
+            if (index === 0 && selectedPlatformName === platformName) { // Reads global var
+                li.classList.add('platform-item-selected');
+                console.log(`Applying selected class to: ${platformName}`);
+            }
+
+            // --- RESTORED Logo and Text Span Creation ---
+            // Add logo
+            const logoPath = getLogoPathForPlatform(platformName);
+            const logoImg = document.createElement('img');
+            logoImg.src = logoPath;                        // Set the source
+            logoImg.alt = `${platformName} logo`;          // Set alt text
+            logoImg.classList.add('platform-logo');        // Add class for styling
+            logoImg.onerror = () => {                      // Add error handling
+                logoImg.src = 'images/platforms/default.png';
+                logoImg.onerror = () => { logoImg.remove(); };
+            };
+            li.appendChild(logoImg); // Append logo to list item
+
+            // Add text span
+            const platformNameSpan = document.createElement('span');
+            platformNameSpan.classList.add('platform-name-text'); // Add class for visibility toggle
+            platformNameSpan.textContent = platformName;            // Set the text content
+            li.appendChild(platformNameSpan); // Append text span to list item
+            // --- END RESTORED SECTION ---
+
+
+            // Add click listener for reordering
+            li.addEventListener('click', () => {
+                const clickedName = li.dataset.platformName;
+                const currentIndex = currentPlatformsOrder.indexOf(clickedName);
+
+                if (currentIndex === 0 && li.classList.contains('platform-item-selected')) {
+                    console.log(`Deselecting platform: ${clickedName}`);
+                    selectedPlatformName = null;
+                    renderPlatformList(platformListContainer, currentPlatformsOrder); // Re-render same order, no highlight
+                } else {
+                    console.log(`Moving platform to front: ${clickedName}`);
+                    currentPlatformsOrder.splice(currentIndex, 1);
+                    currentPlatformsOrder.unshift(clickedName);
+                    selectedPlatformName = clickedName;
+                    renderPlatformList(platformListContainer, currentPlatformsOrder); // Re-render new order, highlight new first
+                }
+            });
+
+            platformListContainer.appendChild(li); // Append the completed list item
+        });
+    } // End renderPlatformList
+
+    
+
+	 /**
      * Displays the full details of a selected game AND triggers store check.
      * @param {object} data - The game data object {name, thumbnailUrl, releaseDate, platforms: [name1, ...]}.
      */
@@ -1182,11 +1279,15 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
         resultsDiv.innerHTML = ''; // Clear previous results
 		obsButtonContainer.innerHTML = ''; // <-- Clear button container again just before adding
+		currentGameRating = { gameId: data.id, value: null }; // Set CURRENT game ID and reset rating value
 		
-		 // --- Set CURRENT game ID and reset value ---
-        currentGameRating = { gameId: data.id, value: null }; // Reset rating
-        console.log(`Displaying details for Game ID: ${currentGameRating.gameId}. Rating reset.`);
+		console.log(`Displaying details for Game ID: ${currentGameRating.gameId}. Rating reset.`);
 		
+		currentPlatformsOrder = [...data.platforms]; // <<< STORE Initial Platform Order
+		selectedPlatformName = null; // <<< RESET selection state when new game loads
+		
+        console.log(`Displaying details for Game ID: ${data.id}. Initial platforms:`, currentPlatformsOrder);
+        
 		// --- Re-apply platform logo size variable ---
         // Ensures the variable is set before elements using it are created in this scope
         const currentLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
@@ -1228,29 +1329,17 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         //platformsHeader.innerHTML = '<strong>Platforms:</strong>';
         //detailsDiv.appendChild(platformsHeader);
 		
-        // Platform List Creation (with local logos)
-         if (data.platforms && data.platforms.length > 0) {
-            const platformList = document.createElement('ul');
-            data.platforms.forEach(platformName => {
-                const li = document.createElement('li'); li.classList.add('platform-item');
-                const logoPath = getLogoPathForPlatform(platformName);
-                const logoImg = document.createElement('img');
-                logoImg.src = logoPath;
-                logoImg.alt = `${platformName} logo`;
-                logoImg.classList.add('platform-logo');
-                // No explicit width/height here, relies on CSS variable
-                logoImg.onerror = () => { /* ... */ };
-                li.appendChild(logoImg);
-                const platformNameSpan = document.createElement('span');
-                platformNameSpan.classList.add('platform-name-text'); // Class added
-                platformNameSpan.textContent = platformName;
-                li.appendChild(platformNameSpan);
-                platformList.appendChild(li);
-            });
-            detailsDiv.appendChild(platformList);
+    
+		
+		// --- Platform List Creation & Initial Render ---
+        const platformList = document.createElement('ul'); // Create UL container
+        if (data.platforms && data.platforms.length > 0) {
+             detailsDiv.appendChild(platformList); // Append UL
+             renderPlatformList(platformList, currentPlatformsOrder); // Initial render (no selection)
         } else {
+            // Handle no platforms
             const noPlatforms = document.createElement('span'); noPlatforms.textContent = ' N/A';
-            platformsElement.appendChild(noPlatforms);
+            platformsHeader.appendChild(noPlatforms);
         }
 
         // --- Create placeholder for Store Links ---
