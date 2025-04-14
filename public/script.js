@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
+	
+	 // --- Secret Theme Activation ---
+    const secretSequence = ['d', 'a', 'n', 'n', 'y', 'r', 'u', 'l', 'e', 's'];
+    let currentSequence = [];
 
 	// --- Global State ---
     let currentGameRating = { gameId: null, value: null }; // Stores { gameId: 123, value: 4 } or { gameId: 456, value: 85 } etc.
@@ -108,6 +112,31 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     });
     console.log("Rating style listener attached.");
+	
+	// Keydown listener for secret theme
+    document.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase(); // Get pressed key in lowercase
+        // Ignore if modifier keys are pressed (Shift, Ctrl, Alt, Meta)
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+        // Append key to current sequence
+        currentSequence.push(key);
+
+        // Keep only the last N keys (N = length of secret sequence)
+        currentSequence = currentSequence.slice(-secretSequence.length);
+        // console.log("Sequence:", currentSequence.join('')); // Debugging
+
+        // Check if the current sequence matches the secret one
+        if (currentSequence.join('') === secretSequence.join('')) {
+            console.log("SECRET THEME ACTIVATED!");
+            applyTheme('dannyvalz'); // Apply the hidden theme
+            // Optionally: briefly show feedback, e.g., flash the background
+            // document.body.style.transition = 'background-color 0.1s ease-in-out';
+            // setTimeout(() => document.body.style.transition = '', 150);
+            currentSequence = []; // Reset sequence
+        }
+    });
+    console.log("Secret theme key listener attached.");
 	
 	// End of Event Listeners
     console.log("Finished attaching event listeners.");
@@ -290,28 +319,44 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     function applyTheme(themeName) {
         console.log("Applying theme:", themeName);
         try {
-            document.body.dataset.theme = themeName;
-            localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
+            // --- If switching TO a preset/custom FROM dannyvalz, clear custom styles ---
+            const previousTheme = document.body.dataset.theme;
+            if (previousTheme === 'dannyvalz' && themeName !== 'dannyvalz') {
+                 console.log("Switching away from secret theme, clearing potential direct styles...");
+                 customColorInputs.forEach(picker => {
+                     if(picker.dataset.varname) {
+                         document.body.style.removeProperty(picker.dataset.varname);
+                     }
+                 });
+            }
+            // --- End Clear ---
+
+
+            document.body.dataset.theme = themeName; // Apply theme via data attribute
+            localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName); // Save preference
 
             if (themeName === 'custom') {
-                if (!loadCustomColors()) { // Try loading saved custom colors
-                    populateCustomColorInputsFromComputed(); // If none, populate from current style
-                    saveCustomColors(); // And save these as the initial custom set
+                if (!loadCustomColors()) {
+                    populateCustomColorInputsFromComputed();
+                    saveCustomColors();
                 }
                 customColorEditor.style.display = 'block';
             } else {
                 customColorEditor.style.display = 'none';
-                // Clear direct styles when switching away from custom
-                customColorInputs.forEach(picker => {
-                     if(picker.dataset.varname) {
-                         document.body.style.removeProperty(picker.dataset.varname);
-                     }
-                });
+                // Clear direct styles when switching to ANY non-custom theme
+                // (This was already here, ensure it runs unless target is 'dannyvalz' where styles might be needed)
+                if (themeName !== 'custom' && themeName !== 'dannyvalz') {
+                    customColorInputs.forEach(picker => {
+                         if(picker.dataset.varname) {
+                             document.body.style.removeProperty(picker.dataset.varname);
+                         }
+                    });
+                }
             }
         } catch (e) {
              console.error(`Error applying theme ${themeName}:`, e);
         }
-    }
+    } // End applyTheme
 
     function applyFont(fontName) {
         try {
@@ -473,18 +518,33 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                 localStorage.removeItem(LOCAL_STORAGE_THEME_KEY);
             }
 
+			 // --- No validation needed for 'dannyvalz' here if it's hidden ---
             // Apply theme FIRST
             applyTheme(themeToApply);
 
-            // Check radio state AFTER applying theme
-            const currentThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${themeToApply}"]`);
-            if (currentThemeRadio) {
-                currentThemeRadio.checked = true;
+             // --- Check Radio State (Skip if theme is 'dannyvalz') ---
+            if (themeToApply !== 'dannyvalz') {
+                 const currentThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${themeToApply}"]`);
+                 if (currentThemeRadio) {
+                     currentThemeRadio.checked = true;
+                 } else {
+                      // If saved theme (light/dark/etc) not found, default to light radio
+                      console.warn(`Could not find theme radio for saved/default value: ${themeToApply}. Checking light.`);
+                      const defaultThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${defaultTheme}"]`);
+                      if (defaultThemeRadio) defaultThemeRadio.checked = true;
+                      // If defaulting visually, make sure the actual theme matches
+                      if (document.body.dataset.theme !== defaultTheme) {
+                           applyTheme(defaultTheme);
+                      }
+                 }
             } else {
-                 console.error(`Could not find theme radio for value: ${themeToApply}. Defaulting check state.`);
-                 const defaultThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${defaultTheme}"]`);
-                 if (defaultThemeRadio) defaultThemeRadio.checked = true;
+                // If dannyvalz theme loaded, make sure 'light' radio LOOKS checked
+                // so user has a starting point if they open settings.
+                 const lightRadio = themeRadioGroup.querySelector('input[name="theme"][value="light"]');
+                 if(lightRadio) lightRadio.checked = true;
+                 console.log("Loaded hidden theme 'dannyvalz'. Defaulting visible radio selection to 'light'.");
             }
+
 
             // Load Font (Validation happens within loadLocalFonts now)
             const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
@@ -527,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                  if (defaultTextRadio) defaultTextRadio.checked = true;
             }
             
+			
 			      
 			// --- Load Rating Display Style ---
             const savedRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY);
@@ -570,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             const finalLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
             const finalTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
             console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${savedFont || 'Default'}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}', StoreLinks='${storeLinksAreEnabled}',RatingStyle='${ratingStyleToApply}'`);
-
+			
+			
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
              alert("Error loading settings. Defaults may be applied.");

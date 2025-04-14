@@ -1,0 +1,14 @@
+# GameGet Custom Theme Export
+# Saved: 2025-04-09T01:16:40.329Z
+
+--bg-color = #45283c
+--element-bg = #45283c
+--text-color = #ffffff
+--text-muted = #ffffff
+--border-color = #cbdbfc
+--border-light = #45283c
+--primary-color = #7d165c
+--primary-hover = #9b1c72
+--accent-color = #45283c
+--accent-darker = #7d165c
+--error-color = #dc3545

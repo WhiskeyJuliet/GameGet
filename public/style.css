@@ -70,6 +70,23 @@ body[data-theme="hotdogstand"] {
     --shadow-light: rgba(0, 0, 0, 0.07);
 }
 
+/* Super Secret Theme shhhhhh */
+body[data-theme="dannyvalz"] {
+    --bg-color: #6255a4;
+    --element-bg: #b4da55;
+    --text-color: #333564;
+    --text-muted: #ffffff;
+    --border-color: #cde68e;
+    --border-light: #cde68e;
+    --primary-color: #b4da55;
+    --primary-hover: #98c12b;
+    --accent-color: #92b928;
+    --accent-darker: #7d165c;
+    --error-color: #dc3545;
+    /* Define shadow colors if desired, otherwise they inherit from :root (light) */
+    --shadow-color: rgba(0, 0, 0, 0.07);
+    --shadow-light: rgba(0, 0, 0, 0.09);
+}
 
 /* === Global Styles & Body (Using Variables) === */
 *,
@@ -107,6 +124,12 @@ body {
     object-fit: contain;
     margin-bottom: 10px; /* Add some space below the logo */
 	margin-right: 6px; /* Optical alignment adjustment */
+	content: url('images/GameGet_Logo.png'); /* Default logo */
+    transition: content 0.3s ease; /* Optional smooth transition */
+}
+
+body[data-theme="dannyvalz"] .main-title-logo {
+    content: url('images/GameGet_Logo_alt.png'); /* Alternate logo */
 }
 
 /* Adjust H1 styles */
@@ -151,6 +174,7 @@ a:hover {
     text-decoration: underline;
     color: var(--primary-hover);
 }
+
 
 /* === Search Input Area === */
 .search-container {
@@ -1100,3 +1124,23 @@ body.store-links-hidden .store-links-container {
 	margin-right: 8px;
     box-shadow: 0 4px 6px var(--shadow-color);
 }
+
+/* --- IMPORTANT --- */
+/* Ensure theme colors are applied correctly to elements like inputs, buttons, etc. */
+/* Check elements in the secret theme and adjust if needed. */
+/* For example, the input text color might need adjustment: */
+body[data-theme="dannyvalz"] #gameInput,
+body[data-theme="dannyvalz"] #font-selector,
+body[data-theme="dannyvalz"] .color-input-group .hex-input {
+    color: var(--text-color); /* Ensure input text uses the theme's text color */
+}
+body[data-theme="dannyvalz"] #gameInput::placeholder {
+     color: var(--text-muted); /* Use muted text for placeholder */
+     opacity: 0.7;
+}
+/* Check button text colors for contrast */
+body[data-theme="dannyvalz"] #searchButton { color: var(--text-color); } /* Text on primary */
+body[data-theme="dannyvalz"] #reset-custom-colors { color: var(--text-color); } /* Text on muted */
+body[data-theme="dannyvalz"] .import-export-buttons button { color: var(--text-color); } /* Text on accent-darker */
+body[data-theme="dannyvalz"] #save-obs-button { color: var(--text-color); } /* Text on primary */
+body[data-theme="dannyvalz"] .store-button { color: #ffffff; } /* Override default text color for store buttons */

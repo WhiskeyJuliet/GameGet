@@ -8,6 +8,11 @@
     "name": "SystemTrue",
     "filename": "SystemTrue.ttf",
     "cssValue": "'SystemTrue', sans-serif"
+  },
+  {
+    "name": "Monda",
+    "filename": "Monda.ttf",
+    "cssValue": "'Monda', sans-serif"
   }
 
 ]
