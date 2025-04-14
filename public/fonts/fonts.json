@@ -20,7 +20,7 @@
   {
     "name": "Fredoka",
     "filename": "Fredoka.ttf",
-    "cssValue": "'Fredoka', sans-serif"
+    "cssValue": "'Fredoka', sans-serif",
+	"ascentOverride": "100%"
   }
-
 ]

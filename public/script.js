@@ -30,13 +30,26 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	// Constants
     const API_BASE_URL = 'http://localhost:3000';
     const LOCAL_STORAGE_THEME_KEY = 'selectedTheme';
-    const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
+    // const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
+	const LOCAL_STORAGE_THEME_FONTS_KEY = 'themeFontPreferences';
     const LOCAL_STORAGE_CUSTOM_COLORS_KEY = 'customThemeColors';
 	const LOCAL_STORAGE_LOGO_SIZE_KEY = 'platformLogoSize';
     const LOCAL_STORAGE_PLATFORM_TEXT_KEY = 'platformTextVisible';
 	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
+	
+	// --- NEW: Default Theme Font Mapping ---
+    const defaultThemeFonts = {
+        'light': "'Monda', sans-serif",
+        'dark': "'Monda', sans-serif",
+        'purple': "'Monda', sans-serif",
+        'hotdogstand': "'SystemTrue', sans-serif", // Use value from fonts.json
+        'dannyvalz': "'Fredoka', sans-serif",      // Secret theme font
+        'custom': "'pxSans', sans-serif" // Default for custom
+    };
+	
+    const systemDefaultFont = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'"; // Store separately
 	
 	 // --- Secret Theme Activation ---
     const secretSequence = ['d', 'a', 'n', 'n', 'y', 'r', 'u', 'l', 'e', 's'];
@@ -56,15 +69,6 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     }
     console.log("All essential elements verified.");
     // Add similar checks for settings elements if needed
-
-	// --- Create Style Tag for Dynamic Fonts ---
-    let dynamicFontStyleSheet = document.getElementById(DYNAMIC_FONT_STYLE_ID);
-    if (!dynamicFontStyleSheet) {
-        dynamicFontStyleSheet = document.createElement('style');
-        dynamicFontStyleSheet.id = DYNAMIC_FONT_STYLE_ID;
-        document.head.appendChild(dynamicFontStyleSheet);
-        console.log("Created style tag for dynamic fonts.");
-    }
 
     // --- Event Listeners ---
 	searchButton.addEventListener('click', searchGamesList);
@@ -301,13 +305,19 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                     // The inline styles applied in step 5 will now take effect visually.
                     document.body.dataset.theme = 'custom';
 
-                    // --- Step 7: Re-apply font (important!) ---
-                    // We cleared it earlier, need to re-apply the selected font
-                    const selectedFont = fontSelector.value;
-                    applyFont(selectedFont); // applyFont sets the inline style AND saves
+                    // --- Step 7: APPLY the BASE theme's DEFAULT font ---
+                    const baseThemeDefaultFont = defaultThemeFonts[baseThemeName] || systemDefaultFont;
+                    console.log(`Reset applying default font for base theme '${baseThemeName}': ${baseThemeDefaultFont}`);
+                    // Apply AND SAVE this as the new preference for the 'custom' theme now
+                    applyFont(baseThemeDefaultFont, true);
+                    // --- End Apply Font ---
 
                     // --- Step 8: Save the newly populated custom colors ---
                     saveCustomColors();
+					
+					// --- Step 9: Ensure custom radio is checked
+                    const customRadio = themeRadioGroup.querySelector('input[name="theme"][value="custom"]');
+                    if (customRadio) customRadio.checked = true;
                 });
             });
 
@@ -318,55 +328,149 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
          }
     }
    
-    function applyTheme(themeName) {
-        console.log("Applying theme:", themeName);
+     function applyTheme(themeName) {
+        console.log(`Applying theme: ${themeName}`);
         try {
-            // --- If switching TO a preset/custom FROM dannyvalz, clear custom styles ---
-            const previousTheme = document.body.dataset.theme;
-            if (previousTheme === 'dannyvalz' && themeName !== 'dannyvalz') {
-                 console.log("Switching away from secret theme, clearing potential direct styles...");
-                 customColorInputs.forEach(picker => {
-                     if(picker.dataset.varname) {
-                         document.body.style.removeProperty(picker.dataset.varname);
-                     }
-                 });
+            const previousTheme = document.body.dataset.theme; // Get theme BEFORE changing it
+			
+			// Clear inline styles if switching FROM custom/dannyvalz TO a preset
+            if ((previousTheme === 'custom' || previousTheme === 'dannyvalz') &&
+                (themeName !== 'custom' && themeName !== 'dannyvalz')) {
+                console.log(`Switching from ${previousTheme} to preset ${themeName}, clearing inline styles...`);
+                customColorInputs.forEach(picker => { if (picker.dataset.varname) document.body.style.removeProperty(picker.dataset.varname); });
+                document.body.style.removeProperty('--body-font'); // Clear font too
             }
-            // --- End Clear ---
-
-
-            document.body.dataset.theme = themeName; // Apply theme via data attribute
-            localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName); // Save preference
-
-            if (themeName === 'custom') {
-                if (!loadCustomColors()) {
-                    populateCustomColorInputsFromComputed();
-                    saveCustomColors();
-                }
-                customColorEditor.style.display = 'block';
+			
+			// Apply theme attribute
+            document.body.dataset.theme = themeName; 
+            // Save preference *unless* it's the secret theme
+            if (themeName !== 'dannyvalz') {
+                 localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
+                 console.log(`Saved theme preference: ${themeName}`);
             } else {
-                customColorEditor.style.display = 'none';
-                // Clear direct styles when switching to ANY non-custom theme
-                // (This was already here, ensure it runs unless target is 'dannyvalz' where styles might be needed)
-                if (themeName !== 'custom' && themeName !== 'dannyvalz') {
-                    customColorInputs.forEach(picker => {
-                         if(picker.dataset.varname) {
-                             document.body.style.removeProperty(picker.dataset.varname);
-                         }
-                    });
-                }
+                console.log("Not saving 'dannyvalz' as theme preference.");
+                // Optional: Revert localStorage to the *previous* non-secret theme?
+                // This prevents dannyvalz from loading on refresh.
+                // If previousTheme was a valid non-secret theme, save that one.
+                 const validThemes = Array.from(themeRadioGroup.querySelectorAll('input[name="theme"]')).map(radio => radio.value);
+                 if (previousTheme && previousTheme !== 'dannyvalz' && validThemes.includes(previousTheme)) {
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, previousTheme);
+                     console.log(`Reverted saved theme preference to: ${previousTheme}`);
+                 } else {
+                     // If previous was also dannyvalz or invalid, revert to default light
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light');
+                     console.log("Reverted saved theme preference to: light");
+                 }
             }
-        } catch (e) {
-             console.error(`Error applying theme ${themeName}:`, e);
-        }
+			
+			// --- Handle Styles/Editor/Font ---
+            if (themeName === 'custom') {
+                console.log("Theme is 'custom'. Loading colors, applying font, showing editor.");
+                // 1. Load and apply custom colors (sets inline styles)
+                if (!loadCustomColors()) { populateCustomColorInputsFromComputed(); saveCustomColors(); }
+                // 2. Show editor
+                customColorEditor.style.display = 'block';
+                // 3. Apply the font specifically saved for the 'custom' theme
+                const themePrefs = getThemeFontPrefs();
+                // Use saved pref for 'custom', fallback to system default if none saved for custom
+                const customFontToApply = themePrefs['custom'] || systemDefaultFont;
+                console.log(`Custom theme: Applying font: ${customFontToApply}`);
+                applyFont(customFontToApply, false); // Apply WITHOUT saving pref again
+
+            } else { // Theme is NOT 'custom' (presets or dannyvalz)
+                console.log(`Theme is '${themeName}'. Hiding editor.`);
+                customColorEditor.style.display = 'none';
+                // Inline styles should have been cleared above if needed
+
+                // --- Apply Font for Presets/DannyValz ---
+                let fontToApply = null;
+                if (themeName === 'dannyvalz') {
+                     fontToApply = defaultThemeFonts['dannyvalz'];
+                     console.log(` -> Secret theme, using specific font: ${fontToApply}`);
+                } else {
+                     const themePrefs = getThemeFontPrefs();
+                     fontToApply = themePrefs[themeName]; // Check user pref for THIS theme
+                     if (!fontToApply) { // If no user pref, use theme default
+                          fontToApply = defaultThemeFonts[themeName] || systemDefaultFont;
+                          console.log(` -> No user preference for '${themeName}', using default: ${fontToApply}`);
+                     } else {
+                          console.log(` -> Found user preference for '${themeName}': ${fontToApply}`);
+                     }
+                }
+                 // Apply the determined font WITHOUT saving pref again
+                 applyFont(fontToApply, false);
+            }
+
+            // --- Update Font Selector Dropdown AFTER applying font ---
+            // This ensures the dropdown reflects the font actually applied by the logic above
+             const finalAppliedFont = getComputedStyle(document.body).getPropertyValue('--body-font').trim();
+             if (finalAppliedFont) {
+                  const fontOption = fontSelector.querySelector(`option[value="${CSS.escape(finalAppliedFont)}"]`);
+                  if (fontOption) fontSelector.value = finalAppliedFont;
+                  else fontSelector.value = systemDefaultFont;
+             }
+
+        } catch (e) { console.error(`Error applying theme ${themeName}:`, e); }
+        finally { console.log(`--- applyTheme END for: ${themeName} ---`); }
     } // End applyTheme
 
-    function applyFont(fontName) {
+    // --- applyFont ---
+     /**
+     * Applies the selected font style AND saves preference for the CURRENT theme.
+     * @param {string} fontName - The CSS font-family value (e.g., "'Roboto', sans-serif").
+     * @param {boolean} savePref - Whether to save this as the user's preference for the current theme.
+     */
+    function applyFont(fontName, savePref = true) {
         try {
-            console.log("Applying font:", fontName);
+            // Basic validation: ensure fontName is a non-empty string
+            if (!fontName || typeof fontName !== 'string' || fontName.trim() === '') {
+                console.warn(`applyFont: Invalid fontName provided: "${fontName}". Using system default.`);
+                fontName = systemDefaultFont; // Fallback
+                savePref = false; // Don't save an invalid/fallback choice as preference
+            }
+
+            console.log(`Applying font: ${fontName}`);
             document.body.style.setProperty('--body-font', fontName);
-            localStorage.setItem(LOCAL_STORAGE_FONT_KEY, fontName);
+
+            // Update dropdown selection visually if it exists
+            const fontOption = fontSelector.querySelector(`option[value="${CSS.escape(fontName)}"]`);
+             if(fontOption) {
+                  fontSelector.value = fontName;
+             } else {
+                  console.warn(`Font "${fontName}" applied but not found in dropdown.`);
+                  // Potentially select system default in dropdown as visual fallback
+                  fontSelector.value = systemDefaultFont;
+             }
+
+
+            // Save preference for the *current* theme if requested
+            const currentTheme = document.body.dataset.theme || 'light';
+            if (savePref && currentTheme !== 'dannyvalz') { // Don't save preference for secret theme
+                const themePrefs = getThemeFontPrefs();
+                themePrefs[currentTheme] = fontName;
+                localStorage.setItem(LOCAL_STORAGE_THEME_FONTS_KEY, JSON.stringify(themePrefs));
+                console.log(`Saved font preference for theme '${currentTheme}': ${fontName}`);
+            }
         } catch (e) {
             console.error(`Error applying font ${fontName}:`, e);
+        }
+    }
+
+    // --- Handler for manual font selection ---
+    function handleFontSelectionChange(event) {
+        applyFont(event.target.value, true); // Apply and save preference for current theme
+    }
+
+    // --- Helper to get saved font preferences ---
+    function getThemeFontPrefs() {
+        const savedPrefs = localStorage.getItem(LOCAL_STORAGE_THEME_FONTS_KEY);
+        try {
+            const prefs = savedPrefs ? JSON.parse(savedPrefs) : {};
+            console.log("getThemeFontPrefs: Loaded prefs:", prefs); // <<< LOG LOADED PREFS
+            return prefs;
+        } catch (e) {
+            console.error("Error parsing theme font preferences:", e);
+            return {}; // Return empty object on error
         }
     }
 
@@ -412,14 +516,25 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             }
 
             console.log("Found local fonts:", localFonts);
+			
+			// --- Create Style Tag for Dynamic Fonts ---
+			let dynamicFontStyleSheet = document.getElementById(DYNAMIC_FONT_STYLE_ID);
+			if (!dynamicFontStyleSheet) {
+			dynamicFontStyleSheet = document.createElement('style');
+			dynamicFontStyleSheet.id = DYNAMIC_FONT_STYLE_ID;
+			document.head.appendChild(dynamicFontStyleSheet);
+			console.log("Created style tag for dynamic fonts.");
+			}
 
             // 1. Clear previous dynamic font options and styles
             const existingOptions = fontSelector.querySelectorAll('option[data-dynamic-font]');
+			console.log(`Clearing ${existingOptions.length} existing dynamic font options.`);
             existingOptions.forEach(option => option.remove());
             dynamicFontStyleSheet.innerHTML = ''; // Clear previous @font-face rules
 
             // 2. Generate @font-face rules and add options
             let fontFaceRules = "";
+			let optionsAddedCount = 0;
             localFonts.forEach(font => {
                 if (font.name && font.filename && font.cssValue) {
                     // Generate @font-face rule
@@ -443,14 +558,17 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                     }
                     // --- End ascent-override check ---
 					
-					
-                    fontFaceRules += `
+					const rule = `
+                    
 @font-face {
     font-family: '${font.name}';
     src: url('/fonts/${font.filename}') format('${format}');${ascentOverrideRule} /* Add ascent override if defined */
     /* Add font-weight/style here if needed */
 }
 `;
+					fontFaceRules += rule;
+					console.log(`Generated rule for ${font.name}`);
+
                     // Add option to dropdown
                     const option = document.createElement('option');
                     option.value = font.cssValue; // e.g., "'pxSans', sans-serif"
@@ -463,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                     } else {
                         fontSelector.appendChild(option); // Append if no static fonts left
                     }
+					optionsAddedCount++;
 
                 } else {
                     console.warn("Skipping invalid font entry in fonts.json:", font);
@@ -472,23 +591,6 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             // 3. Add all @font-face rules to the style tag
             dynamicFontStyleSheet.innerHTML = fontFaceRules;
             console.log("Added @font-face rules and dropdown options.");
-
-            // 4. Re-apply saved font in case it was a dynamic one that just loaded
-            const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
-            if (savedFont) {
-                // Check if the saved font is now available in the dropdown
-                 const validFonts = Array.from(fontSelector.options).map(option => option.value);
-                 if (validFonts.includes(savedFont)) {
-                    console.log("Re-applying previously saved dynamic font:", savedFont);
-                    applyFont(savedFont); // Apply the style
-                    fontSelector.value = savedFont; // Set the dropdown value
-                 } else {
-                     console.warn(`Saved font "${savedFont}" still not found after refresh. Using default.`);
-                      // Optionally reset to system default visually if saved font is invalid now
-                      // applyFont(fontSelector.querySelector("option[value*='-apple-system']").value);
-                      // fontSelector.value = fontSelector.querySelector("option[value*='-apple-system']").value;
-                 }
-            }
 
         } catch (error) {
             console.error("Error loading or processing local fonts:", error);
@@ -512,151 +614,115 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 	
-	function loadSettings() {
-		// NOTE: We call loadLocalFonts() at the end of DOMContentLoaded now,
-        // so it runs *before* this most of the time.
-        // This function primarily needs to handle selecting the saved font
-        // *after* loadLocalFonts has potentially populated the list.
-        // The logic inside loadLocalFonts already re-applies the saved font.
-		
+      
+      
+function loadSettings() {
         try { // Wrap entire function for safety
 			console.log("--- loadSettings START ---");
-            const savedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
-            const defaultTheme = 'light';
 
+            // --- 1. Load and Validate THEME ---
+            const savedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
+            const defaultTheme = 'light'; // Your chosen default theme
             let themeToApply = savedTheme || defaultTheme;
 
-            // Validate theme
+            // Validate theme against available radio buttons (allow 'dannyvalz')
             const validThemes = Array.from(themeRadioGroup.querySelectorAll('input[name="theme"]')).map(radio => radio.value);
-            if (!validThemes.includes(themeToApply)) {
-                console.warn(`Saved theme "${themeToApply}" is invalid. Resetting to default.`);
+            if (!validThemes.includes(themeToApply) && themeToApply !== 'dannyvalz') {
+                console.warn(`Saved theme "${themeToApply}" is invalid or not found. Resetting to default "${defaultTheme}".`);
                 themeToApply = defaultTheme;
-                localStorage.removeItem(LOCAL_STORAGE_THEME_KEY);
+                localStorage.removeItem(LOCAL_STORAGE_THEME_KEY); // Remove invalid value
             }
 
-			 // --- No validation needed for 'dannyvalz' here if it's hidden ---
-            // Apply theme FIRST
+            // --- 2. Apply Theme (This will also handle applying the correct font) ---
+            // applyTheme now checks themeFontMap, user prefs for the theme, or defaults
             applyTheme(themeToApply);
+            // Note: applyTheme also handles showing/hiding the custom color editor
 
-             // --- Check Radio State (Skip if theme is 'dannyvalz') ---
+            // --- 3. Update Theme Radio Button Selection ---
+            // Set the radio button visually AFTER applyTheme has run
             if (themeToApply !== 'dannyvalz') {
-                 const currentThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${themeToApply}"]`);
-                 if (currentThemeRadio) {
-                     currentThemeRadio.checked = true;
+                const currentThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${themeToApply}"]`);
+                if (currentThemeRadio) {
+                    currentThemeRadio.checked = true;
+                } else {
+                     // Fallback if saved theme radio is missing
+                     console.error(`Could not find theme radio for value: ${themeToApply}. Checking default.`);
+                     const defaultThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${defaultTheme}"]`);
+                     if (defaultThemeRadio) defaultThemeRadio.checked = true;
+                }
+            } else {
+                // If secret theme active, visually check the default radio for user orientation
+                 const lightRadio = themeRadioGroup.querySelector('input[name="theme"][value="light"]'); // Or your defaultTheme
+                 if(lightRadio) lightRadio.checked = true;
+                 console.log("Loaded hidden theme 'dannyvalz'. Defaulting visible radio selection.");
+            }
+
+
+            // --- 4. Update Font Selector Dropdown ---
+            // Get the font that was ACTUALLY applied by applyTheme (reading computed style)
+            const finalAppliedFont = getComputedStyle(document.body).getPropertyValue('--body-font').trim();
+            if (finalAppliedFont) {
+                 // Check if this font exists as an option value
+                 const fontOption = fontSelector.querySelector(`option[value="${CSS.escape(finalAppliedFont)}"]`);
+                 if (fontOption) {
+                    fontSelector.value = finalAppliedFont; // Set dropdown to match applied font
+                    console.log(`loadSettings: Set font selector to currently applied font: ${finalAppliedFont}`);
                  } else {
-                      // If saved theme (light/dark/etc) not found, default to light radio
-                      console.warn(`Could not find theme radio for saved/default value: ${themeToApply}. Checking light.`);
-                      const defaultThemeRadio = themeRadioGroup.querySelector(`input[name="theme"][value="${defaultTheme}"]`);
-                      if (defaultThemeRadio) defaultThemeRadio.checked = true;
-                      // If defaulting visually, make sure the actual theme matches
-                      if (document.body.dataset.theme !== defaultTheme) {
-                           applyTheme(defaultTheme);
-                      }
+                     // If the applied font isn't in the list (e.g., loaded font failed, fallback applied), select system default visually
+                     console.warn(`loadSettings: Applied font "${finalAppliedFont}" not found in selector. Selecting System Default visually.`);
+                     fontSelector.value = systemDefaultFont; // Use the system default value
                  }
             } else {
-                // If dannyvalz theme loaded, make sure 'light' radio LOOKS checked
-                // so user has a starting point if they open settings.
-                 const lightRadio = themeRadioGroup.querySelector('input[name="theme"][value="light"]');
-                 if(lightRadio) lightRadio.checked = true;
-                 console.log("Loaded hidden theme 'dannyvalz'. Defaulting visible radio selection to 'light'.");
+                // Fallback if somehow --body-font wasn't set
+                fontSelector.value = systemDefaultFont;
             }
 
 
-            // Load Font (Validation happens within loadLocalFonts now)
-            const savedFont = localStorage.getItem(LOCAL_STORAGE_FONT_KEY);
-            if (savedFont) {
-                // We don't apply here directly, loadLocalFonts handles re-applying if needed
-                // We just set the dropdown value if the option exists *now*
-                 const fontOption = fontSelector.querySelector(`option[value="${CSS.escape(savedFont)}"]`);
-                 if(fontOption) {
-                    fontSelector.value = savedFont;
-                    console.log(`loadSettings: Set font selector to saved value: ${savedFont}`);
-                 } else {
-                     console.warn(`loadSettings: Saved font "${savedFont}" not found in dropdown (might load dynamically).`);
-                     // Don't remove from storage here, loadLocalFonts will handle validation
-                 }
-            }
-
-            // --- Load Store Links Toggle State ---
+            // --- 5. Load Store Links Toggle State ---
             const savedStoreLinksEnabled = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY);
-            // Default to 'true' (enabled) if no setting is saved yet
             const storeLinksAreEnabled = savedStoreLinksEnabled === null ? true : (savedStoreLinksEnabled === 'true');
-			applyStoreLinksToggle(storeLinksAreEnabled); // Apply the setting (which now includes adding/removing class)
+			applyStoreLinksToggle(storeLinksAreEnabled); // Apply class
             const valueToSelectStore = storeLinksAreEnabled ? 'on' : 'off';
             const currentStoreRadio = storeLinksToggleGroup.querySelector(`input[name="storeLinksToggle"][value="${valueToSelectStore}"]`);
-            if (currentStoreRadio) currentStoreRadio.checked = true;
-            else { // Fallback if somehow radios are missing/changed
-                 const defaultStoreRadio = storeLinksToggleGroup.querySelector('input[name="storeLinksToggle"][value="on"]');
-                 if (defaultStoreRadio) defaultStoreRadio.checked = true;
-            }
+            if (currentStoreRadio) currentStoreRadio.checked = true; else { /* ... fallback check ... */ }
 
-			// Platform Text Visibility
+            // --- 6. Load Platform Display Settings: Logo Size ---
+            const savedLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY);
+            const initialLogoSize = parseInt(savedLogoSize) || 16;
+            applyLogoSize(initialLogoSize, false); // Apply style
+
+            // --- 7. Load Platform Display Settings: Text Visibility ---
             const savedTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY);
             const textIsVisible = savedTextVisible === null ? true : (savedTextVisible === 'true');
-            applyPlatformTextVisibility(textIsVisible); // Apply visibility class
-            const textValueToSelect = textIsVisible ? 'show' : 'hide'; // Determine correct radio value
-            const currentTextRadio = platformTextToggleGroup.querySelector(`input[name="platformTextToggle"][value="${textValueToSelect}"]`); // Find correct radio
-            if (currentTextRadio) {
-                currentTextRadio.checked = true; // Set checked state
-            } else { // Fallback
-                 const defaultTextRadio = platformTextToggleGroup.querySelector('input[name="platformTextToggle"][value="show"]');
-                 if (defaultTextRadio) defaultTextRadio.checked = true;
-            }
-            
-			
-			      
-			// --- Load Rating Display Style ---
+            applyPlatformTextVisibility(textIsVisible); // Apply class
+            const textValueToSelect = textIsVisible ? 'show' : 'hide';
+            const currentTextRadio = platformTextToggleGroup.querySelector(`input[name="platformTextToggle"][value="${textValueToSelect}"]`);
+            if (currentTextRadio) currentTextRadio.checked = true; else { /* ... fallback check ... */ }
+
+            // --- 8. Load Rating Display Style ---
             const savedRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY);
-            const defaultRatingStyle = 'off'; // Define the default value
-            let ratingStyleToApply = savedRatingStyle || defaultRatingStyle; // Use saved or default
-
-            // Validate the style against available options
-             const validRatingStyles = Array.from(ratingStyleGroup.querySelectorAll('input[name="ratingStyle"]')).map(radio => radio.value);
-             if (!validRatingStyles.includes(ratingStyleToApply)) {
-                 console.warn(`Saved rating style "${ratingStyleToApply}" is invalid. Resetting to default "${defaultRatingStyle}".`);
-                 ratingStyleToApply = defaultRatingStyle;
-                 localStorage.removeItem(LOCAL_STORAGE_RATING_STYLE_KEY); // Remove invalid value
-             }
-
-            applyRatingStyle(ratingStyleToApply, false); // Apply style setting (e.g., hide/show container potentially)
-
-            // Update radio button state
+            const defaultRatingStyle = 'off';
+            let ratingStyleToApply = savedRatingStyle || defaultRatingStyle;
+            const validRatingStyles = Array.from(ratingStyleGroup.querySelectorAll('input[name="ratingStyle"]')).map(radio => radio.value);
+             if (!validRatingStyles.includes(ratingStyleToApply)) { /* ... handle invalid ... */ }
+            applyRatingStyle(ratingStyleToApply, false); // Apply style setting
             const currentRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${ratingStyleToApply}"]`);
-            if (currentRatingRadio) {
-                currentRatingRadio.checked = true; // Check the correct radio
-            } else {
-                 // --- FALLBACK LOGIC ---
-                 console.error(`Could not find rating style radio button for value: "${ratingStyleToApply}". Defaulting check state to '${defaultRatingStyle}'.`);
-                 // Find the radio button corresponding to the default style
-                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
-                 if (defaultRatingRadio) {
-                      defaultRatingRadio.checked = true; // Check the default radio
-                 } else {
-                      console.error(`CRITICAL: Could not even find the default rating style radio ('${defaultRatingStyle}')!`);
-                 }
-                 // Ensure the actual applied style matches the fallback default
-                 applyRatingStyle(defaultRatingStyle, false);
-                 // --- END FALLBACK LOGIC ---
-            }
-            // --- End Rating Style Load ---
+            if (currentRatingRadio) currentRatingRadio.checked = true; else { /* ... fallback ... */ }
 
-    
-            
-			
-			// --- Update Log ---
-            const finalLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY) || 16;
-            const finalTextVisible = localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_PLATFORM_TEXT_KEY) === 'true');
-            console.log(`Loaded settings: Theme='${document.body.dataset.theme}', Font='${savedFont || 'Default'}', LogoSize='${finalLogoSize}', PlatformText='${finalTextVisible}', StoreLinks='${storeLinksAreEnabled}',RatingStyle='${ratingStyleToApply}'`);
-			
-			
+
+            // --- Final Log ---
+            console.log(`Loaded settings: Theme='${themeToApply}', Font='${finalAppliedFont || 'Default'}', StoreLinks='${storeLinksAreEnabled}', LogoSize='${initialLogoSize}', PlatformText='${textIsVisible}', RatingStyle='${ratingStyleToApply}'`);
+
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
              alert("Error loading settings. Defaults may be applied.");
-             try { applyTheme('light'); } catch {}
+             try { applyTheme('light'); } catch {} // Attempt basic fallback
         } finally {
              console.log("--- loadSettings END ---");
         }
     } // End loadSettings
+
+    
 
 	    // --- Import/Export Functions ---
 
@@ -1336,10 +1402,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         if (data.platforms && data.platforms.length > 0) {
              detailsDiv.appendChild(platformList); // Append UL
              renderPlatformList(platformList, currentPlatformsOrder); // Initial render (no selection)
-        } else {
-            // Handle no platforms
-            const noPlatforms = document.createElement('span'); noPlatforms.textContent = ' N/A';
-            platformsHeader.appendChild(noPlatforms);
+        } else {             
+             console.log("No platforms found for this game.");
+             // Create a paragraph to show Platforms: N/A
+             const noPlatformsPara = document.createElement('p');
+             noPlatformsPara.innerHTML = '<strong>Platforms:</strong> N/A';
+             // Append this paragraph instead of the empty UL
+             detailsDiv.appendChild(noPlatformsPara);
         }
 
         // --- Create placeholder for Store Links ---

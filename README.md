@@ -57,7 +57,7 @@ This guide explains how to set up and run the GameGet application locally on you
 4.  **Move the file:** For OBS to display platform logos and other images correctly when using the "Local File" option in the Browser Source, **move the downloaded `.html` file into the `public/results` folder** of your GameGet application directory.
 5.  **Add to OBS:** In OBS Studio, add a "Browser" source.
     *   Check the "Local file" option.
-    *   Click "Browse" and select the `.html` file you just moved into the `public` (or `public/results/`) folder.
+    *   Click "Browse" and select the `.html` file you just moved into the `public/results/`) folder.
     *   Adjust width/height as needed.
 6.  **Updating:** When you save details for a new game, it will download a new file. To avoid having to change the OBS local browser source every time you fetch new details, I suggest saving a copy as Current_GameGet.html to use as your browser source and then overwriting that file instead.
 7.	**Tip:** To make saving easier, you can often configure your web browser to "Always ask where to save files" in its download settings. This will let you save directly into the `public/results/` folder each time and/or choose to overwrite an existing file eg. Current_GameGet.html

@@ -123,7 +123,7 @@ body {
     height: 128px; /* Maintain aspect ratio or set specific height */
     object-fit: contain;
     margin-bottom: 10px; /* Add some space below the logo */
-	margin-right: 6px; /* Optical alignment adjustment */
+	margin-right: 4px; /* Optical alignment adjustment */ 
 	content: url('images/GameGet_Logo.png'); /* Default logo */
     transition: content 0.3s ease; /* Optional smooth transition */
 }
@@ -1155,9 +1155,11 @@ body[data-theme="dannyvalz"] #gameInput::placeholder {
      color: var(--text-muted); /* Use muted text for placeholder */
      opacity: 0.7;
 }
-body[data-theme="dannyvalz"] .rating-stars span.filled,
-.rating-stars:hover span.hover { 
-     color: #6255A4 !important; /* Rating star colour */
+body[data-theme="dannyvalz"] .rating-stars span.filled { 
+     color: #6255A4; /* Rating star colour */
+}
+body[data-theme="dannyvalz"] .rating-stars:hover span.hover { 
+     color: #6255A4; /* Rating star colour */
 }
 }
 /* Check button text colors for contrast */
