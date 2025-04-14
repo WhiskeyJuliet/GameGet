@@ -16,6 +16,11 @@
     "filename": "Monda.ttf",
     "cssValue": "'Monda', sans-serif",
 	"ascentOverride": "120%"
+  },
+  {
+    "name": "Fredoka",
+    "filename": "Fredoka.ttf",
+    "cssValue": "'Fredoka', sans-serif"
   }
 
 ]

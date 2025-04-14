@@ -81,7 +81,7 @@ body[data-theme="dannyvalz"] {
     --primary-color: #b4da55;
     --primary-hover: #98c12b;
     --accent-color: #92b928;
-    --accent-darker: #7d165c;
+    --accent-darker: #ffffff;
     --error-color: #dc3545;
     /* Define shadow colors if desired, otherwise they inherit from :root (light) */
     --shadow-color: rgba(0, 0, 0, 0.07);
@@ -175,6 +175,9 @@ a:hover {
     color: var(--primary-hover);
 }
 
+input {
+	font-family: inherit;
+}
 
 /* === Search Input Area === */
 .search-container {
@@ -1151,6 +1154,11 @@ body[data-theme="dannyvalz"] .color-input-group .hex-input {
 body[data-theme="dannyvalz"] #gameInput::placeholder {
      color: var(--text-muted); /* Use muted text for placeholder */
      opacity: 0.7;
+}
+body[data-theme="dannyvalz"] .rating-stars span.filled,
+.rating-stars:hover span.hover { 
+     color: #6255A4 !important; /* Rating star colour */
+}
 }
 /* Check button text colors for contrast */
 body[data-theme="dannyvalz"] #searchButton { color: var(--text-color); } /* Text on primary */
