@@ -930,7 +930,7 @@ function loadSettings() {
             return basePath + 'windows.png';
 		} else if (nameLower.includes('ms-dos') || nameLower.includes('dos')) {
             return basePath + 'dos.png';
-		} else if (nameLower.includes('pc-98') || nameLower.includes('NEC PC-9800')) {
+		} else if (nameLower.includes('pc-98') || nameLower.includes('nec pc-9800')) {
             return basePath + 'pc98.png';
 		} else if (nameLower.includes('fmtowns') || nameLower.includes('fm towns')) {
             return basePath + 'fmtowns.png';
@@ -977,11 +977,11 @@ function loadSettings() {
         } else if (nameLower.includes('snes') || nameLower.includes('super nintendo')) {
             return basePath + 'snes.png';
 		} else if (nameLower.includes('super famicom') || nameLower.includes('SFC')) {
-            return basePath + 'snes.png';
-		} else if (nameLower.includes('sega mega drive') || nameLower.includes('sega genesis')) { 
-            return basePath + 'md.png';			
-        } else if (nameLower.includes('nintendo entertainment system') || nameLower.includes('nes')) {
-            return basePath + 'nintendo.png'; 
+            return basePath + 'snes.png';	
+        } else if (nameLower.includes('nintendo entertainment system')) {
+            return basePath + 'nes.png';
+		} else if (nameLower.includes('family computer') || nameLower.includes('famicom')) {
+            return basePath + 'famicom.png'; 			
         } else if (nameLower.includes('linux')) {
             return basePath + 'linux.png';
         } else if (nameLower.includes('mac') || nameLower.includes('macos')) {
@@ -1014,6 +1014,8 @@ function loadSettings() {
             return basePath + 'dreamcast.png';
 		} else if (nameLower.includes('master system') || nameLower.includes('sega master system')) { 
             return basePath + 'mastersystem.png';
+		} else if (nameLower.includes('mega drive/genesis') || nameLower.includes('genesis')) { 
+            return basePath + 'megadrive.png';		
 		} else if (nameLower.includes('saturn') || nameLower.includes('sega saturn')) { 
             return basePath + 'saturn.png';
 		} else if (nameLower.includes('32x') || nameLower.includes('sega 32x')) { 
@@ -1030,7 +1032,9 @@ function loadSettings() {
             return basePath + 'gameboy.png';
         } else if (nameLower.includes('3do') || nameLower.includes('3do interactive multiplayer')) { 
             return basePath + '3do.png';
-        }
+        } else if (nameLower.includes('arcade')) { 
+            return basePath + 'arcade.png';
+		}	
 		// Add more mappings here for other consoles/platforms as needed...
 
         // Default fallback icon if no specific match is found
