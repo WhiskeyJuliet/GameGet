@@ -976,10 +976,12 @@ function loadSettings() {
             return basePath + '64dd.png'; 
         } else if (nameLower.includes('snes') || nameLower.includes('super nintendo')) {
             return basePath + 'snes.png';
-		} else if (nameLower.includes('super famicom') || nameLower.includes('SFC')) {
+		} else if (nameLower.includes('super famicom') || nameLower.includes('sfc')) {
             return basePath + 'snes.png';	
         } else if (nameLower.includes('nintendo entertainment system')) {
             return basePath + 'nes.png';
+		} else if (nameLower.includes('family computer disk system') || nameLower.includes('famicom disk system')) {
+            return basePath + 'fcds.png'; 
 		} else if (nameLower.includes('family computer') || nameLower.includes('famicom')) {
             return basePath + 'famicom.png'; 			
         } else if (nameLower.includes('linux')) {
@@ -1036,6 +1038,16 @@ function loadSettings() {
             return basePath + '3do.png';
         } else if (nameLower.includes('arcade')) { 
             return basePath + 'arcade.png';
+		} else if (nameLower.includes('commodore vic-20')|| nameLower.includes('vic-20')) { 
+            return basePath + 'vic20.png';
+		} else if (nameLower.includes('commodore pet')) { 
+            return basePath + 'pet.png';
+		} else if (nameLower.includes('commodore c64')) { 
+            return basePath + 'c64.png';
+		} else if (nameLower.includes('commodore 16')) { 
+            return basePath + 'c16.png';
+		} else if (nameLower.includes('commodore')) {  // General fallback for Commodores
+            return basePath + 'commodore.png';
 		}	
 		// Add more mappings here for other consoles/platforms as needed...
 
