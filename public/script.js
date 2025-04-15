@@ -462,15 +462,16 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     }
 
     // --- Helper to get saved font preferences ---
+    // (Keep this function as defined previously to manage theme-specific fonts)
     function getThemeFontPrefs() {
         const savedPrefs = localStorage.getItem(LOCAL_STORAGE_THEME_FONTS_KEY);
         try {
             const prefs = savedPrefs ? JSON.parse(savedPrefs) : {};
-            console.log("getThemeFontPrefs: Loaded prefs:", prefs); // <<< LOG LOADED PREFS
+            // console.log("getThemeFontPrefs: Loaded prefs:", prefs); // Optional log
             return prefs;
         } catch (e) {
             console.error("Error parsing theme font preferences:", e);
-            return {}; // Return empty object on error
+            return {};
         }
     }
 
@@ -724,18 +725,36 @@ function loadSettings() {
 
     
 
-	    // --- Import/Export Functions ---
+	// --- Import/Export Functions ---
 
     function formatColorsForExport() {
         let outputText = "# GameGet Custom Theme Export\n";
-        outputText += `# Saved: ${new Date().toISOString()}\n\n`;
+        outputText += `# Theme saved: ${new Date().toISOString()}\n`;
+        outputText += `# Note: Font preference is included if set for the 'custom' theme.\n\n`;
+
+        // Export Colors
         customColorInputs.forEach(picker => {
             const varName = picker.dataset.varname;
-            const value = picker.value;
+            const value = picker.value; // Read current value from input
             if (varName) {
                 outputText += `${varName} = ${value}\n`;
             }
         });
+
+        // Font Export
+        // Get the font specifically saved for the 'custom' theme
+        const themePrefs = getThemeFontPrefs();
+        const customThemeFont = themePrefs['custom']; // Get font saved for 'custom'
+
+        if (customThemeFont) {
+             console.log("Exporting custom theme font:", customThemeFont);
+             outputText += `\n# Font Preference for Custom Theme\n`;
+             outputText += `--body-font = ${customThemeFont}\n`; // Add the font variable line
+        } else {
+             console.log("No specific font preference saved for 'custom' theme to export.");
+        }
+        
+
         return outputText;
     }
 
@@ -758,62 +777,85 @@ function loadSettings() {
 	function importCustomColors(event) {
         console.log("Import file selected...");
         const file = event.target.files[0];
-        if (!file) {
-            console.log("No file selected for import.");
-            return;
-        }
+        if (!file) { console.log("No file selected."); return; }
 
         const reader = new FileReader();
-
         reader.onload = (e) => {
             const content = e.target.result;
             console.log("--- Import File Read ---");
-            console.log("Raw Content Snippet:", content.substring(0, 200)); // Log beginning of file content
-
             try {
-                // Step 1: Parse
-                console.log("Parsing imported colors...");
-                const importedColors = parseImportedColors(content);
-                console.log("Parsed colors object:", JSON.stringify(importedColors, null, 2)); // Log the parsed object
+                // Step 1: Parse (gets { colors: {}, font: null|string })
+                console.log("Parsing imported data...");
+                const parsedData = parseImportedColors(content);
+                console.log("Parsed data:", parsedData);
 
-                if (Object.keys(importedColors).length === 0) {
-                    throw new Error("No valid color variables found in the file.");
+                if (Object.keys(parsedData.colors).length === 0 && !parsedData.font) {
+                    throw new Error("No valid color or font variables found.");
                 }
 
                 // Step 2: Apply Colors
-                console.log("Applying parsed colors to styles and inputs...");
-                Object.entries(importedColors).forEach(([varName, value]) => {
-                    console.log(` -> Processing ${varName} = ${value}`);
-                    // Apply directly to body style
-                    updateCustomColor(varName, value);
-                    // Update the corresponding input fields (picker and hex)
-                    syncColorInputs(varName, value);
-                });
-                console.log("Finished applying/syncing inputs.");
+                if (Object.keys(parsedData.colors).length > 0) {
+                    console.log("Applying parsed colors...");
+                    Object.entries(parsedData.colors).forEach(([varName, value]) => {
+                        updateCustomColor(varName, value);
+                        syncColorInputs(varName, value);
+                    });
+                    console.log("Finished applying/syncing colors.");
+                } else { console.log("No colors found in import file."); }
 
+                // Step 3: Apply Font (if parsed and VALID)
+                let fontApplied = false;
+                if (parsedData.font) {
+                     console.log(`Attempting to apply imported font: ${parsedData.font}`);
+                     // Validate against current dropdown options
+                     const validFonts = Array.from(fontSelector.options).map(option => option.value);
+                     if (validFonts.includes(parsedData.font)) {
+                         // Apply font AND SAVE it as the preference for the 'custom' theme
+                         applyFont(parsedData.font, true); // savePref = true
+                         fontApplied = true;
+                         console.log("Successfully applied and saved imported font for custom theme.");
+                     } else {
+                          console.warn(`Imported font "${parsedData.font}" not found in available options. Font not changed.`);
+                          alert(`Import Warning: Font "${parsedData.font}" not found. Colors applied, but font unchanged.`);
+                     }
+                } else {
+                     console.log("No font preference found in import file.");
+                     // Optional: Decide if you want to apply a default font here if none is imported
+                     // e.g., applyFont(systemDefaultFont, true);
+                }
 
-                // Step 3: Set theme attribute & save theme preference
+                // Step 4: Activate Custom Theme
                 console.log("Setting theme to 'custom' and ensuring editor is visible...");
+                // We call applyTheme *after* potentially applying the font,
+                // so applyTheme doesn't override the imported font for the custom theme.
+                // However, applyTheme needs to run to set the data-attribute and show the editor.
+                // We can temporarily prevent applyTheme from applying a font itself.
+                const currentFontBeforeApplyTheme = getComputedStyle(document.body).getPropertyValue('--body-font').trim(); // Store font before applyTheme
+
                 document.body.dataset.theme = 'custom';
                 localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'custom');
-                if (customColorEditor) { // Ensure editor exists
-                    customColorEditor.style.display = 'block';
-                } else {
-                     console.error("Custom color editor element not found!");
-                }
+                if (customColorEditor) customColorEditor.style.display = 'block';
+                else console.error("Custom color editor element not found!");
 
-                // Step 4: Save the NEW colors to storage
-                console.log("Attempting to save the newly applied custom colors...");
-                saveCustomColors(); // saveCustomColors reads from the input elements
+                // If applyTheme changed the font back, reapply the intended one.
+                 if(fontApplied){
+                     const fontAfterApplyTheme = getComputedStyle(document.body).getPropertyValue('--body-font').trim();
+                     if(fontAfterApplyTheme !== parsedData.font){
+                        console.log("Re-applying imported font after applyTheme.");
+                        applyFont(parsedData.font, true); // Ensure imported font persists
+                     }
+                 }
 
-                // Step 5: Check the radio button
+
+                // Step 5: Save the applied CUSTOM COLORS to storage
+                console.log("Saving the applied custom colors...");
+                saveCustomColors(); // Reads from input elements
+
+                // Step 6: Check the 'custom' radio button
                 console.log("Setting 'custom' theme radio button checked state...");
                 const customRadio = themeRadioGroup.querySelector('input[name="theme"][value="custom"]');
-                if (customRadio) {
-                    customRadio.checked = true;
-                } else {
-                    console.error("Cannot find custom theme radio button.");
-                }
+                if (customRadio) customRadio.checked = true;
+                else console.error("Cannot find custom theme radio button.");
 
                 alert("Custom theme imported successfully!");
                 console.log("--- Import Process Complete ---");
@@ -839,37 +881,45 @@ function loadSettings() {
     } // End importCustomColors
 	
     function parseImportedColors(textContent) {
-        const colors = {};
+        const result = {
+             colors: {}, // Object to hold color variables
+             font: null    // To hold the font value, null if not found
+        };
         const lines = textContent.split('\n');
         const hexRegex = /^#[0-9A-F]{6}$/i; // Regex for #RRGGBB format
 
+        console.log("Parsing imported file content...");
         lines.forEach(line => {
             line = line.trim();
-            // Ignore comments and empty lines
-            if (line.startsWith('#') || line === '') {
-                return;
-            }
+            if (line.startsWith('#') || line === '') return; // Ignore comments/blanks
 
             const parts = line.split('=');
-            if (parts.length === 2) {
+            if (parts.length >= 2) { // Use >= 2 for robustness
                 const varName = parts[0].trim();
-                const value = parts[1].trim().toLowerCase(); // Ensure lowercase hex
+                const value = parts.slice(1).join('=').trim(); // Join potential value parts
 
-                // Validate variable name looks like a CSS var and value is a valid hex
-                if (varName.startsWith('--') && hexRegex.test(value)) {
-                    // Check if this variable name exists in our inputs
+                // Check if it's a color variable
+                if (varName.startsWith('--') && varName !== '--body-font' && hexRegex.test(value.toLowerCase())) {
                     if (customColorEditor.querySelector(`[data-varname="${varName}"]`)) {
-                         colors[varName] = value;
-                    } else {
-                         console.warn(`Ignoring unknown variable from import file: ${varName}`);
-                    }
-                } else {
-                    console.warn(`Ignoring invalid line in import file: "${line}"`);
+                         result.colors[varName] = value.toLowerCase();
+                         // console.log(` -> Parsed color: ${varName} = ${result.colors[varName]}`);
+                    } else { console.warn(`Ignoring unknown color variable: ${varName}`); }
+                }
+                // Check if it's the font variable
+                else if (varName === '--body-font') {
+                     if (typeof value === 'string' && value.length > 0) {
+                         result.font = value; // Store font value (keep original casing from file)
+                         console.log(` -> Parsed font: ${varName} = ${result.font}`);
+                     } else { console.warn(`Ignoring invalid font value: "${value}"`);}
+                }
+                 else {
+                    console.warn(`Ignoring invalid/unrecognized line: "${line}"`);
                 }
             }
         });
-        return colors;
-    }
+        console.log("Finished parsing import file.");
+        return result; // Return object with colors and font
+    } // End parseImportedColors
 
     // --- Platform Logo Mapping Helper Function ---
     function getLogoPathForPlatform(platformName) {

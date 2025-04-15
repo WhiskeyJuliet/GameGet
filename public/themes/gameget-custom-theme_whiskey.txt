@@ -1,5 +1,6 @@
 # GameGet Custom Theme Export
-# Saved: 2025-04-09T01:16:40.329Z
+# Theme saved: 2025-04-15T00:16:27.444Z
+# Note: Font preference is included if set for the 'custom' theme.
 
 --bg-color = #45283c
 --element-bg = #45283c
@@ -12,3 +13,6 @@
 --accent-color = #45283c
 --accent-darker = #7d165c
 --error-color = #dc3545
+
+# Font Preference for Custom Theme
+--body-font = 'pxSans', sans-serif
