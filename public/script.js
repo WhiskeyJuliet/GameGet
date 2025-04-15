@@ -1015,7 +1015,9 @@ function loadSettings() {
 		} else if (nameLower.includes('master system') || nameLower.includes('sega master system')) { 
             return basePath + 'mastersystem.png';
 		} else if (nameLower.includes('mega drive/genesis') || nameLower.includes('genesis')) { 
-            return basePath + 'megadrive.png';		
+            return basePath + 'megadrive.png';	
+		} else if (nameLower.includes('game gear') || nameLower.includes('sega game gear')) { 
+            return basePath + 'gamegear.png';			
 		} else if (nameLower.includes('saturn') || nameLower.includes('sega saturn')) { 
             return basePath + 'saturn.png';
 		} else if (nameLower.includes('32x') || nameLower.includes('sega 32x')) { 
