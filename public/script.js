@@ -26,11 +26,11 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const importFileInput = document.getElementById('import-file-input');
 	const platformLogoSizeInput = document.getElementById('platform-logo-size');
     const platformTextToggleGroup = document.getElementById('platform-text-toggle-group');
-	
+	 
 	// Constants
     const API_BASE_URL = 'http://localhost:3000';
     const LOCAL_STORAGE_THEME_KEY = 'selectedTheme';
-    // const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
+    const LOCAL_STORAGE_FONT_KEY = 'selectedFont';
 	const LOCAL_STORAGE_THEME_FONTS_KEY = 'themeFontPreferences';
     const LOCAL_STORAGE_CUSTOM_COLORS_KEY = 'customThemeColors';
 	const LOCAL_STORAGE_LOGO_SIZE_KEY = 'platformLogoSize';
@@ -1514,10 +1514,12 @@ function loadSettings() {
         saveButton.appendChild(saveIcon);
         saveButton.appendChild(saveText);
         // --- End Append ---
-
+		
+		console.log("displayGameDetails: 'data' object before adding listener:", JSON.stringify(data, null, 2));
+		
         // Add click listener
         saveButton.addEventListener('click', () => {
-            saveResultsHtml(data.name); // Pass the game name for the filename
+            saveResultsHtml(data); // Pass the game name for the filename
         });
         // --- Append button to the DEDICATED container ---
         obsButtonContainer.appendChild(saveButton);
@@ -1643,69 +1645,47 @@ function loadSettings() {
     } // End addStoreButton
 
           // --- Function to Save HTML for OBS ---
-    async function saveResultsHtml(gameName) {
-        console.log(`OBS SAVE: Starting generation for "${gameName}"`);
+ async function saveResultsHtml(gameData) { // Now accepts full gameData object
+		console.log("OBS SAVE: Received gameData:", JSON.stringify(gameData, null, 2));
+        const gameName = gameData.name || 'Untitled Game';
+        const gameId = gameData.id || Date.now();
+        console.log(`OBS SAVE: Starting generation for "${gameName}" (ID: ${gameId})`);
 
-        // Wrap core logic in rAF to wait for rendering updates
-        requestAnimationFrame(async () => {
+        requestAnimationFrame(async () => { // Use rAF for style computation timing
             try {
-                // --- Step 0: Get current settings needed for generation ---
+                // --- Step 0: Get current UI/Rating state ---
                 const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
-                const ratingValue = currentGameRating.value; // Use current in-memory rating
+                // Get rating value for the specific game being saved
+                const ratingValue = (currentGameRating.gameId === gameData.id) ? currentGameRating.value : null;
                 const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
-                console.log(`OBS SAVE: Rating Style='${ratingStyle}', Value=${ratingValue}, ShowStores=${shouldShowStores}`);
-
-				// --- Step 0.5: Get Platform Text Visibility State ---
                 const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
-                console.log(`OBS SAVE: Platform text hidden state: ${isPlatformTextHidden}`);
 
-                // --- Step 1: Clone results content & Modify for static output ---
-                console.log("OBS SAVE: Cloning #results div");
+                // --- Step 1: Clone #results content & modify clone for static output ---
+                console.log("OBS SAVE: Cloning #results div and modifying clone...");
                 const resultsClone = resultsDiv.cloneNode(true);
-
-                // 1a: Handle Rating Display
+                // 1a: Inject Static Rating / Remove Input Container
                 const ratingContainerInClone = resultsClone.querySelector('#game-rating-container');
                 if (ratingContainerInClone) {
-                    const staticRatingHtml = getStaticRatingHtml(ratingStyle, ratingValue); // Generate static HTML
-                    if (staticRatingHtml) {
-                        console.log("OBS SAVE: Injecting static rating HTML.");
-                        ratingContainerInClone.innerHTML = staticRatingHtml; // Replace input with static HTML
-                        ratingContainerInClone.removeAttribute("style"); // Remove potential inline display style if set by JS
-                        ratingContainerInClone.classList.remove('rating-off'); // Ensure visible if content present
-                    } else {
-                        console.log("OBS SAVE: Removing rating container (off or no value).");
-                        ratingContainerInClone.remove();
-                    }
+                    const staticRatingHtml = getStaticRatingHtml(ratingStyle, ratingValue);
+                    if (staticRatingHtml) { ratingContainerInClone.innerHTML = staticRatingHtml; ratingContainerInClone.removeAttribute("style"); ratingContainerInClone.classList.remove('rating-off'); }
+                    else { ratingContainerInClone.remove(); }
                 }
-
-                // 1b: Handle Store Links Display
+                // 1b: Remove Store Links Container if hidden by settings
                 const storeContainerInClone = resultsClone.querySelector('.store-links-container');
-                if (storeContainerInClone) {
-                    if (!shouldShowStores) {
-                        console.log("OBS SAVE: Removing store links container (setting is off).");
-                        storeContainerInClone.remove();
-                    } else {
-                        // Clean up loading message just in case
-                        const loadingInClone = storeContainerInClone.querySelector('.store-loading');
-                        if (loadingInClone) loadingInClone.remove();
-                    }
-                }
-
+                if (storeContainerInClone && !shouldShowStores) storeContainerInClone.remove();
+                else if(storeContainerInClone) { const loading = storeContainerInClone.querySelector('.store-loading'); if(loading) loading.remove(); }
                 // 1c: Adjust local image paths
-                console.log("OBS SAVE: Adjusting local image paths...");
                 const imagesToAdjust = resultsClone.querySelectorAll('img');
                 imagesToAdjust.forEach(img => {
-                    const currentSrc = img.getAttribute('src'); // Read original src
-                    if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) {
-                        img.setAttribute('src', '../' + currentSrc); // Set adjusted src
-                    }
+                    const currentSrc = img.getAttribute('src');
+                    if (currentSrc && !currentSrc.match(/^(https?:)?\/\//) && !currentSrc.startsWith('../')) { img.setAttribute('src', '../' + currentSrc); }
                 });
-
-                // 1d: Get final HTML content
+                // 1d: Get final inner HTML of the modified clone
                 const resultsContent = resultsClone.innerHTML;
 
 
                 // --- Step 2: Fetch and clean base CSS ---
+                /* ... Keep logic to fetch style.css, remove themes, @font-face, :root ... */
                 let baseCss = "/* Base styles error */";
                 try {
                     console.log("OBS SAVE: Fetching style.css...");
@@ -1728,7 +1708,8 @@ function loadSettings() {
                 } catch (error) { console.error("OBS SAVE: Error fetching/cleaning style.css:", error); }
 
 
-                // --- Step 3: Get Computed Variable Values ---
+                // --- Step 3: Get Computed Variable Values for styling ---
+                /* ... Keep logic to get computed vars into appliedVariablesString ... */
                 console.log("OBS SAVE: Getting computed styles from BODY...");
                 let appliedVariablesString = "";
                 const varNames = [
@@ -1755,8 +1736,10 @@ function loadSettings() {
                 });
                 // --- activeFontValue is now set correctly ---
 
-                // --- Step 4: Determine Required Font Definitions (REVISED LOGIC) ---
-                let fontDefinitionsHtml = ""; // This will hold the <link> or <style> tags
+
+                // --- Step 4: Determine required Font Definitions ---
+                /* ... Keep logic to generate fontDefinitionsHtml (local @font-face OR google <link>s) ... */
+                 let fontDefinitionsHtml = ""; // This will hold the <link> or <style> tags
 
                 console.log(`OBS SAVE: Determining font definition for active font: ${activeFontValue}`);
 
@@ -1803,34 +1786,76 @@ function loadSettings() {
                     console.log("OBS SAVE: System default font active, no extra definition needed.");
                     fontDefinitionsHtml = '<!-- System default font active -->';
                 }
-                
-                // --- Step 5: Construct the final HTML ---
+
+
+                // --- Step 5: Generate Metadata Tags (Specific Fields) ---
+                console.log("OBS SAVE: Generating metadata tags...");
+                let metaTags = [];
+                // Helper to create meta tag, handling quotes and nulls
+                const createMetaTag = (name, content) => {
+                    const safeContent = content !== null && content !== undefined ? String(content).replace(/"/g, '"') : '';
+                    return `<meta name="${name}" content="${safeContent}">`;
+                };
+
+                metaTags.push(createMetaTag("gameget:id", gameData.id));
+                metaTags.push(createMetaTag("gameget:name", gameData.name));
+                metaTags.push(createMetaTag("gameget:developer", gameData.developer));
+                // metaTags.push(createMetaTag("gameget:publisher", gameData.publisher)); // Keep if you add publisher later
+                metaTags.push(createMetaTag("gameget:releaseDate", gameData.releaseDate));
+                metaTags.push(createMetaTag("gameget:releaseTimestamp", gameData.releaseTimestamp));
+                // Join arrays into comma-separated strings for platforms/genres
+                metaTags.push(createMetaTag("gameget:platforms", (gameData.platforms || []).join(',')));
+                // metaTags.push(createMetaTag("gameget:genres", (gameData.genres || []).join(','))); // Keep if you add genres later
+                metaTags.push(createMetaTag("gameget:coverUrl", gameData.thumbnailUrl));
+                // User Rating
+                if (ratingValue !== null) {
+                    metaTags.push(createMetaTag("gameget:userRatingValue", ratingValue));
+                    metaTags.push(createMetaTag("gameget:userRatingStyle", ratingStyle));
+                }
+                // Store Links (JSON stringify the array)
+                metaTags.push(createMetaTag("gameget:storeLinks", JSON.stringify(gameData.igdbStoreLinks || [])));
+				
+				// Add Selected Platform
+                if (selectedPlatformName) { // Only add if a platform is actually selected
+                     metaTags.push(createMetaTag("gameget:userPlatform", selectedPlatformName));
+                     console.log(`OBS SAVE: Adding selected platform to metadata: ${selectedPlatformName}`);
+                } else {
+                     console.log("OBS SAVE: No platform selected, skipping userPlatform metadata.");
+                }
+				
+                const metaTagsHtml = metaTags.join('\n    ');
+                console.log("OBS SAVE: Generated metadata.");
+                // --- End Metadata ---
+
+
+                // --- Step 6: Construct the full HTML structure ---
                 const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameGet Result - ${gameName}</title>
-    ${fontDefinitionsHtml} <!-- Embed Google Link OR Local @font-face -->
+    <title>GameGet Card - ${gameName}</title> <!-- Changed title -->
+    <!-- Embed Metadata -->
+    ${metaTagsHtml}
+    <!-- Embed Font Definition -->
+    ${fontDefinitionsHtml}
     <style>
-        /* Embedded Base Styles (Themes, :root, @font-face Removed) */
+        /* Embedded Base Styles */
         ${baseCss}
-
         /* Inject Computed Variables into :root */
         :root {
 ${appliedVariablesString}
         }
-
         /* OBS Specific Overrides */
         body { position: relative; padding: 0;}
         #results { position: relative; border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
         #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
-		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1em !important; z-index: auto; }
-		#game-rating-container > * {  font-size: 1.8em !important; font-weight: bold; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
 		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
-	</style>
+    </style>
 </head>
 <body class="${isPlatformTextHidden ? 'platform-text-hidden' : ''}">
     <div id="results">
@@ -1839,26 +1864,25 @@ ${appliedVariablesString}
 </body>
 </html>`;
 
-                // --- Step 6: Create Blob and Download Link ---
+                // --- Step 7: Create Blob and Download Link ---
                 const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
-                link.download = `${safeGameName}_GameGet.html`;
+                link.download = `${safeGameName}_GameGet.html`; // Use ID in filename
                 link.href = url;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-                console.log(`Download triggered for ${link.download}.`);
+                console.log(`Download triggered for ${link.download}. Includes specific metadata.`);
 
             } catch (saveError) {
-                console.error("Error during saveResultsHtml execution:", saveError);
-                alert("An error occurred while generating the HTML file.");
+                 console.error("Error during saveResultsHtml execution:", saveError);
+                 alert("An error occurred while generating the HTML file.");
             }
         }); // End requestAnimationFrame
     } // End saveResultsHtml
-
     
 
     // Initial Setup

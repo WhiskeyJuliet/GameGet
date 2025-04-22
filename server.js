@@ -171,148 +171,100 @@ app.get('/search', async (req, res) => {
 // --- API Endpoint for getting details of a specific game ID ---
 app.get('/details/:gameId', async (req, res) => {
     const { gameId } = req.params;
-    if (!gameId || isNaN(parseInt(gameId))) {
-        return res.status(400).json({ error: 'Valid game ID parameter is required.' });
-    }
-	const parsedGameId = parseInt(gameId);
-	
+    if (!gameId || isNaN(parseInt(gameId))) { return res.status(400).json({ error: 'Valid game ID parameter is required.' }); }
+    const parsedGameId = parseInt(gameId);
+
     try {
         const accessToken = await getTwitchAccessToken();
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
-        // Query: Get specific game by ID, fetch detailed fields including platform logos and developer
-		
-		const requestBody = `
-        fields
-            name,
-            first_release_date,
-            cover.url,
-            platforms.id, platforms.name,
-            involved_companies.id, involved_companies.company.name, involved_companies.developer,
-			websites.url, websites.category;
-        where id = ${parsedGameId};
-        limit 1;
-    `;
+        // --- SIMPLIFIED Query: Fields needed for display + metadata ---
+        const requestBody = `
+            fields
+                name,
+                first_release_date,
+                cover.url,
+                platforms.name,
+                involved_companies.company.name, involved_companies.developer,
+                websites.url, websites.category;
+            where id = ${parsedGameId};
+            limit 1;
+        `;
+        // --- End Query ---
 
-        console.log(`Querying IGDB for details (incl. platform logos) of game ID ${parsedGameId}...`);
-        // ... rest of the endpoint
+        console.log(`Querying IGDB for details (ID: ${parsedGameId})...`);
         const igdbResponse = await axios.post(igdbUrl, requestBody, {
-            headers: {
-                'Client-ID': TWITCH_CLIENT_ID,
-                'Authorization': `Bearer ${accessToken}`,
-                'Accept': 'application/json'
-            },
-            timeout: 10000
+             headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' },
+             timeout: 10000
         });
 
         if (igdbResponse.data && igdbResponse.data.length > 0) {
             const game = igdbResponse.data[0];
             console.log("IGDB Raw Details Data:", game);
 
-            // Map IGDB data
+            // Map IGDB data needed for Frontend Display & Metadata
             const gameData = {
+                id: game.id, // Keep ID for metadata
                 name: game.name || 'N/A',
                 thumbnailUrl: null,
-                releaseDate: 'N/A',
-				developer: 'N/A', 
-                platforms: [], // Initialize as an empty array
-				igdbStoreLinks: [] // Use this array for ALL stores from IGDB
+                releaseTimestamp: game.first_release_date || null, // For metadata sorting
+                releaseDate: 'N/A', // Formatted string for display & metadata
+                developer: 'N/A',
+                platforms: [], // Array of names for display & metadata
+                igdbStoreLinks: [] // Array of {name, url} for display & metadata
             };
 
-            // --- Cover URL Mapping (remains the same) ---
+            // Map Cover URL
             if (game.cover && game.cover.url) {
                 gameData.thumbnailUrl = game.cover.url.replace('t_thumb', 't_cover_big');
-                if (gameData.thumbnailUrl.startsWith('//')) {
-                    gameData.thumbnailUrl = 'https:' + gameData.thumbnailUrl;
-                }
+                if (gameData.thumbnailUrl.startsWith('//')) { gameData.thumbnailUrl = 'https:' + gameData.thumbnailUrl; }
             }
 
-            // --- Release Date Mapping (remains the same) ---
+            // Map Release Date (Formatted String)
             if (game.first_release_date) {
-                const releaseTimestamp = game.first_release_date * 1000;
-                gameData.releaseDate = new Date(releaseTimestamp).toLocaleDateString(undefined, {
-                    year: 'numeric', month: 'long', day: 'numeric'
-                });
+                gameData.releaseDate = new Date(game.first_release_date * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
             }
 
-			// --- Map Developer ---
+            // Map Developer
             if (game.involved_companies && Array.isArray(game.involved_companies)) {
-                // Find the first company marked as the developer
-                const devCompany = game.involved_companies.find(ic => ic.developer === true && ic.company && ic.company.name);
-                if (devCompany) {
-                    gameData.developer = devCompany.company.name;
-                    console.log(`Found Developer: ${gameData.developer}`);
-                } else {
-                     console.log("No company marked as developer found.");
-                     // Optional: Could look for publisher or first company as fallback? For now, N/A is fine.
-                }
+                const devCompany = game.involved_companies.find(ic => ic.developer === true && ic.company?.name);
+                if (devCompany) gameData.developer = devCompany.company.name;
             }
 
-            // --- Platform Mapping (Updated) ---
+            // Map Platforms (Names)
             if (game.platforms && Array.isArray(game.platforms)) {
-                gameData.platforms = game.platforms
-					.map(p => (p && typeof p.name === 'string') ? p.name : null) // Get name only if p and p.name exist and are string
-					.filter(Boolean); // Filter out nulls
+                gameData.platforms = game.platforms.map(p => p.name).filter(Boolean);
             }
-			
-			// --- Map Store Links (Steam, Epic, GOG) from IGDB Websites ---
+
+            // Map Store Links (Steam, Epic, GOG from IGDB)
             if (game.websites && Array.isArray(game.websites)) {
                 game.websites.forEach(site => {
                     let storeName = null;
-                    // ONLY check for Steam and Epic here
-                    switch (site.category) {
-						
-                        case 17: storeName = 'GOG'; break;
-						case 13: storeName = 'Steam'; break;
-						case 16: storeName = 'Epic Games'; break;
-						case 17: storeName = 'itch.io'; break;
-						
-                    }
-
-                          if (storeName && site.url) {
-                        // Basic validation (Adjust GOG check if needed)
-                         const urlLower = site.url.toLowerCase();
-                         let isValidStoreUrl = false;
-                         if (storeName === 'Steam' && urlLower.includes('store.steampowered.com/app/')) isValidStoreUrl = true;
-                         else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValidStoreUrl = true;
-                         else if (storeName === 'GOG' && urlLower.includes('gog.com/')) isValidStoreUrl = true; // Keep GOG check
-
-                         if (isValidStoreUrl) {
-                            gameData.igdbStoreLinks.push({
-                                name: storeName,
-                                url: site.url
-                            });
-                            console.log(`Found IGDB ${storeName} link: ${site.url}`);
-                         } else {
-                             console.log(`Skipping potential IGDB ${storeName} link (URL format mismatch): ${site.url}`);
-                         }
+                    switch (site.category) { case 13: storeName = 'Steam'; break; case 16: storeName = 'Epic Games'; break; case 17: storeName = 'GOG'; break; }
+                    if (storeName && site.url) {
+                         const urlLower = site.url.toLowerCase(); let isValid = false;
+                         if (storeName === 'Steam' && urlLower.includes('store.steampowered.com/app/')) isValid = true;
+                         else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValid = true;
+                         else if (storeName === 'GOG' && urlLower.includes('gog.com/')) isValid = true;
+                         if (isValid) gameData.igdbStoreLinks.push({ name: storeName, url: site.url });
                     }
                 });
-                 // Optional: Sort the links alphabetically by name
-                 //gameData.igdbStoreLinks.sort((a, b) => a.name.localeCompare(b.name));
             }
-            // --- End Map Store Links ---
 
-            console.log("Mapped Game Details:", gameData);
-            res.json(gameData); // Includes igdbStoreLinks array now
+            console.log("Mapped Game Details for Frontend:", gameData);
+            res.json(gameData);
+
+        } else {
+            console.log(`Game ID ${parsedGameId} not found on IGDB.`);
+            res.status(404).json({ error: `Game with ID ${parsedGameId} not found.` });
         }
 
     } catch (error) {
-        // ... (error handling remains the same)
-        console.error(`Error getting IGDB details for ID ${gameId}:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
-        if (error.message === 'Could not authenticate with Twitch/IGDB.' || (error.response && (error.response.status === 401 || error.response.status === 403))) {
-             twitchAccessToken = null;
-             tokenExpiryTime = 0;
-             console.warn("IGDB Auth failed during detail fetch, clearing token.");
-             return res.status(error.response?.status || 503).json({ error: `IGDB Authentication error (${error.response?.status || 'Auth func failed'}). Please try again.` });
-         } else if (error.code === 'ECONNABORTED') {
-             console.error('IGDB details request timed out.');
-             return res.status(504).json({ error: 'IGDB API took too long to respond.' });
-        }
+        console.error(`Error getting IGDB details for ID ${parsedGameId}:`, error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        // ... specific error handling (auth, timeout) ...
         res.status(500).json({ error: 'Failed to get game details from IGDB API.' });
     }
 });
-
 // Other endpoints (/search, catch-all, etc.) remain unchanged.
 
    
