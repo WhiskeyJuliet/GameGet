@@ -23,7 +23,19 @@
           
 <!-- Settings Cog Button -->
     <button id="settings-cog" aria-label="Open Settings" title="Settings">
-        <img src="images/settings.png" alt="Settings">  <!-- Image tag pointing to your file -->
+        <svg class="settings-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="-265 388.9 64 64" width="24" height="24"> <!-- Add class, adjust size if needed -->
+            <!-- Ensure paths use fill="currentColor" or have fill removed -->
+            <path d="M-204.4,423.6c2.1-1.1,3.8-2.7,3.3-5.2l-0.9-5.1c-0.4-2.4-2.6-3.6-4.9-3.7l-1.8-0.1c-0.5-1.2-1.2-2.3-1.9-3.4l0.9-1.7
+	c0.9-2.2,1.2-4.5-0.7-6.1l-4-3.4c-1.9-1.6-4.2-1-6.1,0.3l-1.4,1.1c-1.1-0.5-2.3-1-3.6-1.4l-0.4-1.9c-0.6-2.1-1.9-4.1-4.3-4.1h-5.2
+	c-2.4,0-3.9,2-4.4,4.2l-0.4,1.8c-1.2,0.3-2.4,0.8-3.6,1.3l-1.5-1.2c-2-1.3-4.2-1.9-6.1-0.3l-4,3.4c-1.9,1.6-1.8,4.1-0.7,6.1l0.8,1.6
+	c-0.7,1-1.4,2.1-1.9,3.3l-1.9,0.1c-2.3,0.3-4.5,1.3-4.9,3.7l-0.9,5.2c-0.4,2.4,1.2,4.2,3.3,5.2l1.6,0.5c0.1,1.3,0.3,2.6,0.6,3.8
+	l-1.4,1.3c-1.6,1.7-2.6,3.9-1.4,6l2.6,4.6c1.2,2.1,3.6,2.4,5.8,1.8l1.7-0.5c0.9,0.9,1.9,1.7,2.9,2.5l-0.3,1.9
+	c-0.1,2.4,0.4,4.7,2.7,5.5l4.9,1.8c2.3,0.8,4.3-0.5,5.6-2.4l1-1.5c0.7,0.1,1.4,0.1,2.2,0.1c0.6,0,1.1,0,1.7-0.1l1,1.6
+	c1.4,1.9,3.3,3.3,5.6,2.4l4.9-1.8c2.3-0.8,3-3.2,2.7-5.5l-0.2-1.8c1-0.7,2-1.6,2.9-2.5l1.8,0.6c2.3,0.5,4.6,0.4,5.8-1.8l2.6-4.6
+	c1.2-2.1,0.3-4.4-1.4-6l-1.3-1.2c0.3-1.2,0.5-2.5,0.7-3.8L-204.4,423.6z M-215.8,421.3c0,9.6-7.7,17.4-17.2,17.4
+	s-17.2-7.8-17.2-17.4s7.7-17.4,17.2-17.4S-215.8,411.6-215.8,421.3z"/>
+            <!-- Add other paths/elements from your SVG if necessary -->
+        </svg>
     </button>
 
 
@@ -136,7 +148,17 @@
 						<option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'">System Default</option>
 					<!-- REMOVE hardcoded local font options like pxSans -->
 					</select>
-					<button type="button" id="refresh-fonts-button" title="Reload local fonts from fonts.json">🔄</button> <!-- Refresh Button -->
+					<button type="button" id="refresh-fonts-button" title="Reload local fonts from fonts.json">
+						<svg class="refresh-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="16" height="16"> <!-- Adjust size, add class -->
+						<!-- Paste PATH data from your refresh.svg here -->
+						<!-- Example path (replace with YOUR actual path data) -->
+						<path id="XMLID_14_" d="M7.8,32C7.8,18.7,18.6,7.8,32,7.8c4.5,0,8.8,1.2,12.6,3.5l-4,5l20.7,3.2L53.7,0l-4.2,5.3
+						C44.3,1.9,38.2,0,32,0C14.4,0,0,14.4,0,32c0,1.9,0.2,3.8,0.5,5.7l7.7-1.4C7.9,34.9,7.8,33.5,7.8,32z"/>
+						<path id="XMLID_17_" d="M63.7,27.5L56,28.6c0.2,1.1,0.2,2.3,0.2,3.5c0,13.4-10.9,24.2-24.2,24.2c-4.6,0-9.1-1.3-12.9-3.7l4.1-4.9
+						L2.5,44.1l7.3,19.6l4.3-5.2C19.4,62.1,25.6,64,32,64c17.6,0,32-14.4,32-32C64,30.5,63.9,29,63.7,27.5z"/>
+						<!-- Make sure fill="currentColor" or fill is removed -->
+						</svg>
+					</button> <!-- Refresh Button -->
 				</div>
 		</fieldset>
 
@@ -191,40 +213,105 @@
     </div>
     <!-- End Settings Panel -->
 
-
-    <div class="main-title-container">
-        <img src="images/GameGet_Logo.png" alt="GameGet Logo" class="main-title-logo"> <!-- Logo first -->
-        <h1>GameGet</h1>                                                               <!-- Heading second -->
-        <h3>An IGDB Search Tool</h3>                                                   <!-- Subtitle third -->
-    </div>
-    
-
-    <div class="search-container">
-        <input type="text" id="gameInput" placeholder="Enter game name...">
-        <button id="searchButton">Search</button>
-    </div>
-
-    <div id="results">
-        <p class="info-message">Enter a game name and click Search.</p>
-    </div>
 	
-    <div id="obs-button-container"> <!-- Container for OBS Button, button will be added here dynamically by JS -->
-    </div>
+    <!-- Main Content Wrapper (For Centering) -->
+    <div class="main-wrapper">
 
-    <p class="disclaimer">
-        Data provided by <a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer">IGDB.com</a>.
-    </p>
+        <!-- Title Area (Now Above Tabs) -->
+        <div class="main-title-container">
+            <img src="images/GameGet_Logo.png" alt="GameGet Logo" class="main-title-logo">
+            <h1>GameGet</h1>
+            <h3>An IGDB Search Tool</h3>
+        </div>
+
+        <!-- NEW: Horizontal Tab Navigation -->
+        <div class="tabs-container">
+            <button class="tab-button active" data-tab-target="search-screen">Search</button> <!-- Simplified text -->
+            <button class="tab-button" data-tab-target="collection-screen">Collection</button> <!-- Simplified text -->
+        </div>
+        <!-- END Tabs -->
+
+        <!-- Content Area (Holds Search OR Collection) -->
+        <div class="content-area">
+
+            <!-- Search Screen -->
+            <div class="tab-content active" id="search-screen">
+                <!-- No separate title needed here -->
+                <div class="search-container">
+                    <input type="text" id="gameInput" placeholder="Enter game name...">
+                    <button id="searchButton">Search</button>
+                </div>
+                <div id="results">
+                    <p class="info-message">Enter a game name and click Search.</p>
+                </div>
+                <div id="obs-button-container"></div>
+            </div>
+            <!-- End Search Screen -->
 	
-	<p class="credits">
-		<a href="https://www.wtrjones.co.uk/gameget/" target="_blank" rel="noopener noreferrer"><img src="images/whiskey.png"></a>
-		<a href="https://www.twitch.tv/whiskey_juliet" target="_blank" rel="noopener noreferrer"><img src="images/twitch.png"></a>
-		<a href="https://www.youtube.com/@whiskeyjuliet" target="_blank" rel="noopener noreferrer"><img src="images/youtube.png"></a>
-		<a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer"><img src="images/igdb.png"></a>
-		<a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer"><img src="images/node.png"></a>
-		<a href="https://www.npmjs.com/" target="_blank" rel="noopener noreferrer"><img src="images/npm.png"></a>
-		<a href="https://www.gog.com/" target="_blank" rel="noopener noreferrer"><img src="images/gog.png"></a>
-    </p>
+            <!-- Collection Screen -->
+            <div class="tab-content" id="collection-screen">
+                <!-- No separate title needed here -->
+                <div class="collection-controls">
+                    <button id="refresh-collection-button" title="Rescan public/results folder">Refresh Collection</button>
+                    <span id="collection-status">Status: Ready.</span>
+                </div>
+                                <!-- Filter/Sort Controls -->
+                <div class="collection-filters">
+                    <input type="text" id="collection-filter-title" placeholder="Filter by Title...">
+                    <!-- Developer Filter -->
+                    <select id="collection-filter-developer">
+                        <option value="">Developed by...</option>
+                        <!-- Options added dynamically -->
+                    </select>
+                    <!-- Platform Filter -->
+                    <select id="collection-filter-platform">
+                        <option value="">Released on...</option>
+                         <!-- Options added dynamically -->
+                    </select>
+                    <!-- Sorting Dropdown -->
+                    <select id="collection-sort-select">
+                        <option value="name-asc">Title (A-Z)</option>
+                        <option value="name-desc">Title (Z-A)</option>
+                        <option value="release-desc">Release (New-Old)</option>
+                        <option value="release-asc">Release (Old-New)</option>
+                        <option value="rating-desc">My Rating (High-Low)</option>
+                        <option value="rating-asc">My Rating (Low-High)</option>
+                        <option value="developer-asc">Developer (A-Z)</option>
+                        <!-- <option value="userno-asc">Sort: User No. (Asc)</option> -->
+                    </select>
+                </div>
+				 <!-- Collection Grid -->
+                 <div id="collection-grid">
+                     <p class="info-message">Click Refresh to load game cards.</p>
+                 </div>
+            </div>
+            <!-- End Collection Screen -->
 
+        </div> <!-- End Content Area -->
+
+    </div> <!-- End Main Wrapper -->
+	
+	<!-- Footer Area (Outside Main Wrapper/Content Area) -->
+	<div class="footer-area">
+		<p class="disclaimer">
+			Data provided by <a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer">IGDB.com</a>.
+		</p>
+	
+		<p class="credits">
+			<a href="https://www.wtrjones.co.uk/gameget/" target="_blank" rel="noopener noreferrer"><img src="images/whiskey.png"></a>
+			<a href="https://www.twitch.tv/whiskey_juliet" target="_blank" rel="noopener noreferrer"><img src="images/twitch.png"></a>
+			<a href="https://www.youtube.com/@whiskeyjuliet" target="_blank" rel="noopener noreferrer"><img src="images/youtube.png"></a>
+			<a href="https://ko-fi.com/whiskey_juliet" target="_blank" rel="noopener noreferrer"><img src="images/kofi.png"></a>
+			<a href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer"><img src="images/igdb.png"></a>
+			<a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer"><img src="images/node.png"></a>
+			<a href="https://www.npmjs.com/" target="_blank" rel="noopener noreferrer"><img src="images/npm.png"></a>
+			<a href="https://www.gog.com/" target="_blank" rel="noopener noreferrer"><img src="images/gog.png"></a>
+			<a href="https://store.steampowered.com/" target="_blank" rel="noopener noreferrer"><img src="images/steam.png"></a>
+			<a href="https://store.epicgames.com/en-US/" target="_blank" rel="noopener noreferrer"><img src="images/epic.png"></a>
+			<a href="https://itch.io/" target="_blank" rel="noopener noreferrer"><img src="images/itch.png"></a>
+		</p>
+    </div>
+    <!-- End Footer Area -->
     <script src="script.js"></script>
 </body>
 </html>

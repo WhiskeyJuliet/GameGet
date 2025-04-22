@@ -5,8 +5,8 @@ const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
 const http = require('http'); // Or https if needed
-const fs = require('fs');
-// const stringSimilarity = require('string-similarity'); // REMOVED not needed because switching soley to using igdb store links.
+const fs = require('fs').promises; // Use promises API
+const cheerio = require('cheerio'); // For parsing HTML on backend
 
 const app = express();
 const port = 3000;
@@ -265,9 +265,90 @@ app.get('/details/:gameId', async (req, res) => {
         res.status(500).json({ error: 'Failed to get game details from IGDB API.' });
     }
 });
+
+// --- NEW: API Endpoint to Scan Collection Folder --- // <<<--- ADDED START
+app.get('/api/getCollection', async (req, res) => {
+    const collectionPath = path.join(__dirname, 'public', 'results'); // Path to check
+    console.log(`API: Scanning collection folder: ${collectionPath}`);
+
+    try {
+        // Check if directory exists first
+        try {
+            await fs.access(collectionPath); // Check access/existence
+        } catch (dirError) {
+            if (dirError.code === 'ENOENT') {
+                console.warn(`Collection directory '${collectionPath}' not found. Creating it.`);
+                await fs.mkdir(collectionPath, { recursive: true }); // Create if missing
+                return res.json([]); // Return empty array if just created
+            } else {
+                throw dirError; // Re-throw other access errors
+            }
+        }
+
+        const files = await fs.readdir(collectionPath);
+        const htmlFiles = files.filter(file => file.toLowerCase().endsWith('.html'));
+        console.log(`API: Found ${htmlFiles.length} HTML files.`);
+
+        const collectionData = [];
+
+        // Process each HTML file
+        for (const filename of htmlFiles) { // Use for...of for simpler async loop
+            try {
+                const filePath = path.join(collectionPath, filename);
+                const fileContent = await fs.readFile(filePath, 'utf-8');
+                const $ = cheerio.load(fileContent); // Load HTML into cheerio
+
+                const metadata = {};
+                // Extract metadata using cheerio selectors
+                $('head meta[name^="gameget:"]').each((i, elem) => {
+                    const nameAttr = $(elem).attr('name');
+                    const content = $(elem).attr('content');
+
+                    if (nameAttr && content !== undefined) {
+                         const name = nameAttr.substring(8); // Remove "gameget:" prefix
+
+                         // Type conversion based on expected name
+                         if (content === '') { // Treat empty content as null for consistency
+                             metadata[name] = null;
+                         } else if (name === 'id' || name === 'releaseTimestamp' || name === 'igdbRating' || name === 'userRatingValue') {
+                             metadata[name] = parseFloat(content);
+                             if (isNaN(metadata[name])) metadata[name] = null; // Set to null if parsing failed
+                         } else if (name === 'platforms' || name === 'genres') {
+                             metadata[name] = content ? content.split(',').map(s => s.trim()).filter(Boolean) : []; // Split, trim, filter empty
+                         } else if (name === 'storeLinks') {
+                             try { metadata[name] = JSON.parse(content || '[]'); if (!Array.isArray(metadata[name])) metadata[name] = []; }
+                             catch { metadata[name] = [];}
+                         } else {
+                             metadata[name] = content; // Keep as string (name, dev, date string, coverUrl, userRatingStyle, userPlatform)
+                         }
+                    }
+                });
+
+                // Add if valid
+                if (metadata.name && metadata.id) {
+                     metadata.sourceFile = filename; // Add filename for reference
+                     collectionData.push(metadata);
+                } else {
+                     console.warn(`API: Skipping file ${filename}: Missing essential metadata (name or id). Content:`, content.substring(0, 200));
+                }
+
+            } catch (fileError) {
+                console.error(`API: Error processing file ${filename}:`, fileError.message);
+            }
+        } // End for...of loop
+
+        console.log(`API: Successfully parsed metadata for ${collectionData.length} files.`);
+        res.json(collectionData); // Send array of metadata objects
+
+    } catch (error) {
+        console.error("API: Error reading collection directory:", error);
+        res.status(500).json({ error: 'Failed to read collection data.' });
+    }
+});
+
+
 // Other endpoints (/search, catch-all, etc.) remain unchanged.
 
-   
 /*
 // --- Catch-all route ---
 app.get('*', (req, res) => {

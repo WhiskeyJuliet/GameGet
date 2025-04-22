@@ -8,7 +8,18 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
 	const ratingStyleGroup = document.getElementById('rating-style-group');
 	
-
+	// Collection Elements
+	const tabsContainer = document.querySelector('.tabs-container');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+	const refreshCollectionButton = document.getElementById('refresh-collection-button');
+    const collectionStatus = document.getElementById('collection-status');
+    const collectionGrid = document.getElementById('collection-grid');
+    const collectionFilterTitle = document.getElementById('collection-filter-title');
+    const collectionSortSelect = document.getElementById('collection-sort-select');
+	const collectionFilterDeveloper = document.getElementById('collection-filter-developer'); 
+    const collectionFilterPlatform = document.getElementById('collection-filter-platform');
+	
     // Settings Elements
     const settingsCog = document.getElementById('settings-cog');
     const settingsPanel = document.getElementById('settings-panel');
@@ -59,10 +70,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     let currentGameRating = { gameId: null, value: null }; // Stores { gameId: 123, value: 4 } or { gameId: 456, value: 85 } etc.
 	let currentPlatformsOrder = []; // Store current platform order
 	let selectedPlatformName = null; // Global state for selected platform name
+	let gameCardCollection = []; // Array holds metadata objects {id, name, developer, ...}
+    // let userCardNumbering = {}; // Add later if implementing numbering
+
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
-        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup ) { 
+        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
         return;
@@ -143,6 +157,51 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     });
     console.log("Secret theme key listener attached.");
+	
+   // --- Tab Switching Listener ---
+    tabsContainer.addEventListener('click', (e) => {
+        // Use closest to handle clicks on icon/text inside button
+        const button = e.target.closest('.tab-button');
+        if (button) {
+            const targetId = button.dataset.tabTarget; // Get the ID of the content to show (e.g., "search-screen" or "collection-screen")
+            console.log(`Switching tab to: ${targetId}`);
+
+            // 1. Deactivate all buttons and hide all content sections
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active')); // 'active' class likely controls display:block/none in CSS
+
+            // 2. Activate the clicked button and show the target content section
+            button.classList.add('active');
+            const targetContent = document.getElementById(targetId);
+            if(targetContent) {
+                targetContent.classList.add('active'); // Add 'active' class to show it
+                console.log(`Activated content section: #${targetId}`);
+            } else {
+                console.error(`Target tab content #${targetId} not found!`);
+            }
+
+            // 3. Optionally load collection data if switching to that tab
+            if (targetId === 'collection-screen' && gameCardCollection.length === 0) {
+                 console.log("Collection tab activated, loading initial collection...");
+                 loadCollection(); // Trigger load on first view
+            }
+        }
+    });
+    console.log("Tab listeners attached.");
+    // --- End Tab Listener ---
+
+
+    // --- Collection Control Listeners ---
+    refreshCollectionButton.addEventListener('click', loadCollection);
+    console.log("Collection control listeners attached.");
+
+    // --- Filter/Sort Listeners ---
+    collectionFilterTitle.addEventListener('input', () => renderCollectionGrid(gameCardCollection));
+    collectionSortSelect.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+	collectionFilterDeveloper.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+    collectionFilterPlatform.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+
+    console.log("Collection filter/sort listeners attached.");
 	
 	// End of Event Listeners
     console.log("Finished attaching event listeners.");
@@ -331,37 +390,27 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
      function applyTheme(themeName) {
         console.log(`Applying theme: ${themeName}`);
         try {
-            const previousTheme = document.body.dataset.theme; // Get theme BEFORE changing it
-			
-			// Clear inline styles if switching FROM custom/dannyvalz TO a preset
-            if ((previousTheme === 'custom' || previousTheme === 'dannyvalz') &&
-                (themeName !== 'custom' && themeName !== 'dannyvalz')) {
-                console.log(`Switching from ${previousTheme} to preset ${themeName}, clearing inline styles...`);
-                customColorInputs.forEach(picker => { if (picker.dataset.varname) document.body.style.removeProperty(picker.dataset.varname); });
-                document.body.style.removeProperty('--body-font'); // Clear font too
-            }
-			
-			// Apply theme attribute
-            document.body.dataset.theme = themeName; 
-            // Save preference *unless* it's the secret theme
+            // Apply theme attribute FIRST - this is needed for computed style reading later
+            document.body.dataset.theme = themeName;
+            console.log(`Set data-theme to: ${themeName}`);
+
+            // Save preference (unless secret theme, handle revert)
             if (themeName !== 'dannyvalz') {
                  localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
                  console.log(`Saved theme preference: ${themeName}`);
             } else {
-                console.log("Not saving 'dannyvalz' as theme preference.");
-                // Optional: Revert localStorage to the *previous* non-secret theme?
-                // This prevents dannyvalz from loading on refresh.
-                // If previousTheme was a valid non-secret theme, save that one.
+                 // Revert saved pref if activating secret theme
+                 const previousTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY); // Read from storage
                  const validThemes = Array.from(themeRadioGroup.querySelectorAll('input[name="theme"]')).map(radio => radio.value);
                  if (previousTheme && previousTheme !== 'dannyvalz' && validThemes.includes(previousTheme)) {
-                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, previousTheme);
-                     console.log(`Reverted saved theme preference to: ${previousTheme}`);
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, previousTheme); // Keep last valid
+                     console.log(`Secret theme active. Kept saved theme pref: ${previousTheme}`);
                  } else {
-                     // If previous was also dannyvalz or invalid, revert to default light
-                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light');
-                     console.log("Reverted saved theme preference to: light");
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light'); // Default if needed
+                     console.log("Secret theme active. Reverted saved theme preference to: light");
                  }
             }
+
 			
 			// --- Handle Styles/Editor/Font ---
             if (themeName === 'custom') {
@@ -382,23 +431,30 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                 customColorEditor.style.display = 'none';
                 // Inline styles should have been cleared above if needed
 
-                // --- Apply Font for Presets/DannyValz ---
-                let fontToApply = null;
-                if (themeName === 'dannyvalz') {
-                     fontToApply = defaultThemeFonts['dannyvalz'];
-                     console.log(` -> Secret theme, using specific font: ${fontToApply}`);
-                } else {
-                     const themePrefs = getThemeFontPrefs();
-                     fontToApply = themePrefs[themeName]; // Check user pref for THIS theme
-                     if (!fontToApply) { // If no user pref, use theme default
-                          fontToApply = defaultThemeFonts[themeName] || systemDefaultFont;
-                          console.log(` -> No user preference for '${themeName}', using default: ${fontToApply}`);
-                     } else {
-                          console.log(` -> Found user preference for '${themeName}': ${fontToApply}`);
+				// --- ALWAYS Clear Inline Styles when NOT 'custom' ---
+                console.log(`Clearing potentially conflicting inline styles for theme '${themeName}'...`);
+                customColorInputs.forEach(picker => {
+                     if (picker.dataset.varname) {
+                         document.body.style.removeProperty(picker.dataset.varname);
                      }
+                });
+                // Clear font only if the target theme isn't dannyvalz (which sets its own)
+                // Although applyFont below will override anyway, this is slightly cleaner.
+                if (themeName !== 'dannyvalz') {
+                     document.body.style.removeProperty('--body-font');
                 }
-                 // Apply the determined font WITHOUT saving pref again
-                 applyFont(fontToApply, false);
+                console.log("Cleared potentially conflicting inline styles.");
+                // --- END Clear ---	
+
+                 // --- Apply Font for Presets/DannyValz ---
+                let fontToApply = defaultThemeFonts[themeName] || systemDefaultFont; // Default for this theme
+                // For presets only, check if user saved a preference
+                if (themeName !== 'dannyvalz') {
+                     const themePrefs = getThemeFontPrefs();
+                     fontToApply = themePrefs[themeName] || fontToApply; // Use user pref if exists, else theme default
+                }
+                console.log(`Applying font for '${themeName}': ${fontToApply}`);
+                applyFont(fontToApply, false); // Apply determined font (don't save pref here)
             }
 
             // --- Update Font Selector Dropdown AFTER applying font ---
@@ -505,19 +561,19 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     
     async function loadLocalFonts() {
         console.log("Loading local fonts from fonts.json...");
+        // --- Step 0: Store current selection ---
+        const previouslySelectedFontValue = fontSelector.value;
+        console.log("Storing previously selected font value:", previouslySelectedFontValue);
+        // --- End Step 0 ---
+
         try {
-            const response = await fetch('fonts/fonts.json'); // Fetch the JSON file
-            if (!response.ok) {
-                throw new Error(`Failed to fetch fonts.json: ${response.status}`);
-            }
+            console.log("Fetching fonts/fonts.json...");
+            const response = await fetch('fonts/fonts.json');
+            if (!response.ok) { throw new Error(`Fetch failed: ${response.status}`); }
             const localFonts = await response.json();
-
-            if (!Array.isArray(localFonts)) {
-                 throw new Error("fonts.json did not contain a valid array.");
-            }
-
-            console.log("Found local fonts:", localFonts);
-			
+            if (!Array.isArray(localFonts)) { throw new Error("Invalid array format."); }
+            console.log("Found local fonts data:", localFonts);
+		
 			// --- Create Style Tag for Dynamic Fonts ---
 			let dynamicFontStyleSheet = document.getElementById(DYNAMIC_FONT_STYLE_ID);
 			if (!dynamicFontStyleSheet) {
@@ -527,13 +583,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 			console.log("Created style tag for dynamic fonts.");
 			}
 
-            // 1. Clear previous dynamic font options and styles
+            // --- Step 1: Clear previous dynamic font options and styles ---
             const existingOptions = fontSelector.querySelectorAll('option[data-dynamic-font]');
-			console.log(`Clearing ${existingOptions.length} existing dynamic font options.`);
+            console.log(`Clearing ${existingOptions.length} existing dynamic options.`);
             existingOptions.forEach(option => option.remove());
-            dynamicFontStyleSheet.innerHTML = ''; // Clear previous @font-face rules
+            dynamicFontStyleSheet.innerHTML = ''; // Clear rules
 
-            // 2. Generate @font-face rules and add options
+            // --- Step 2: Generate @font-face rules and add options ---
             let fontFaceRules = "";
 			let optionsAddedCount = 0;
             localFonts.forEach(font => {
@@ -589,16 +645,40 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                 }
             });
 
-            // 3. Add all @font-face rules to the style tag
+            // --- Step 3: Add all @font-face rules ---
             dynamicFontStyleSheet.innerHTML = fontFaceRules;
             console.log("Added @font-face rules and dropdown options.");
-
+			
+			// --- Step 4: Restore Dropdown Selection ---
+            // Check if the previously selected value is still a valid option
+            const validOptionsNow = Array.from(fontSelector.options).map(opt => opt.value);
+            if (validOptionsNow.includes(previouslySelectedFontValue)) {
+                console.log("Restoring previous font selection in dropdown:", previouslySelectedFontValue);
+                fontSelector.value = previouslySelectedFontValue;
+                 // Re-apply the font style itself to be absolutely sure, without saving pref again
+                 applyFont(previouslySelectedFontValue, false);
+            } else {
+                 // If previous selection is gone (e.g., font removed from JSON), select the current computed font or default
+                 console.warn(`Previously selected font "${previouslySelectedFontValue}" no longer exists. Selecting current computed font.`);
+                 const currentComputedFont = getComputedStyle(document.body).getPropertyValue('--body-font').trim();
+                 if (validOptionsNow.includes(currentComputedFont)) {
+                     fontSelector.value = currentComputedFont;
+                 } else {
+                     fontSelector.value = systemDefaultFont; // Ultimate fallback
+                 }
+                 // Apply the font style that the dropdown now shows
+                 applyFont(fontSelector.value, false);
+            }
+            // --- End Step 4 ---
+			
         } catch (error) {
             console.error("Error loading or processing local fonts:", error);
             dynamicFontStyleSheet.innerHTML = '/* Error loading font definitions */'; // Clear on error
              // Optionally inform user: alert("Could not load local fonts from fonts.json.");
         }
+		finally { console.log("--- loadLocalFonts END ---"); }
     }
+	// --- END Load Local Fonts ---
 	
 	function applyRatingStyle(style, savePreference = true) {
         console.log(`Applying rating style: ${style}`);
@@ -1175,6 +1255,270 @@ function loadSettings() {
                 break;
         }
     }
+
+	 // Collection Functions
+	 
+	 /**
+     * Populates a select dropdown with unique options from the collection data.
+     * @param {HTMLSelectElement} selectElement - The dropdown element.
+     * @param {Array<object>} collectionData - The array of metadata objects.
+     * @param {string} metadataKey - The key in the metadata object to extract values from (e.g., 'developer', 'platforms').
+     * @param {string} defaultOptionText - Text for the initial default option (e.g., "Filter by Developer...").
+     */
+    function populateFilterDropdown(selectElement, collectionData, metadataKey, defaultOptionText) {
+        if (!selectElement) return;
+
+        const currentValue = selectElement.value; // Preserve current selection if possible
+        selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Reset options
+
+        const uniqueValues = new Set();
+
+        collectionData.forEach(cardMeta => {
+            const value = cardMeta[metadataKey];
+            if (Array.isArray(value)) { // Handle arrays like platforms/genres
+                value.forEach(item => { if (item) uniqueValues.add(item.trim()); });
+            } else if (value && typeof value === 'string') {
+                uniqueValues.add(value.trim());
+            }
+        });
+
+        // Sort alphabetically and add options
+        [...uniqueValues].sort((a, b) => a.localeCompare(b)).forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            selectElement.appendChild(option);
+        });
+
+        // Restore previous selection if it still exists
+        if (selectElement.querySelector(`option[value="${CSS.escape(currentValue)}"]`)) {
+             selectElement.value = currentValue;
+        }
+    } // End populateFilterDropdown
+	
+	 // Reads collection data from backend API
+     async function loadCollection() {
+         console.log("Loading collection from backend API...");
+         collectionStatus.textContent = 'Status: Loading collection...';
+         collectionGrid.innerHTML = '<p class="info-message loading">Loading collection...</p>';
+         refreshCollectionButton.disabled = true; // Disable button while loading
+
+         try {
+            const response = await fetch(`${API_BASE_URL}/api/getCollection`);
+            if (!response.ok) {
+                 const errorData = await response.json().catch(() => ({ error: `Server returned status ${response.status}` }));
+                 throw new Error(errorData.error || `Failed to load collection: ${response.status}`);
+            }
+
+            const collectionData = await response.json(); // Expecting array of metadata objects
+
+            if (!Array.isArray(collectionData)) {
+                 throw new Error("Received invalid data format from server.");
+            }
+
+            gameCardCollection = collectionData; // Update global collection
+            console.log(`Collection loaded: ${gameCardCollection.length} cards found.`);
+            collectionStatus.textContent = `Status: Loaded ${gameCardCollection.length} cards.`;
+
+			// Populate Filter Dropdowns
+            console.log("Populating filter dropdowns...");
+            populateFilterDropdown(collectionFilterDeveloper, gameCardCollection, 'developer', 'Developed by...');
+            populateFilterDropdown(collectionFilterPlatform, gameCardCollection, 'platforms', 'Released on...');
+            console.log("Filter dropdowns populated.");
+            
+
+            // Render the grid with the loaded data (triggers sort/filter)
+            renderCollectionGrid(gameCardCollection);
+
+         } catch (error) {
+             console.error('Error loading collection:', error);
+             collectionStatus.textContent = 'Status: Error loading collection.';
+             collectionGrid.innerHTML = `<p class="error-message">Error loading collection: ${error.message}</p>`;
+             alert(`Error loading collection: ${error.message}`);
+             gameCardCollection = []; // Reset collection on error
+             renderCollectionGrid([]); // Render empty grid
+         } finally {
+             refreshCollectionButton.disabled = false; // Re-enable refresh button
+         }
+     } // End loadCollection
+
+
+    /**
+     * Renders the game cards in the collection grid based on current data, filters, and sort.
+     * @param {Array<object>} collectionData - The array of METADATA objects.
+     */
+    function renderCollectionGrid(collectionData) {
+        console.log("Rendering collection grid...");
+        collectionGrid.innerHTML = '';
+
+        if (!Array.isArray(collectionData) || collectionData.length === 0) {
+            collectionGrid.innerHTML = '<p class="info-message">No game cards found or loaded yet.<br>Save game details and place files in `public/results`, then Refresh.</p>';
+            return;
+        }
+
+        // --- Apply Filtering ---
+        const titleFilter = collectionFilterTitle.value.toLowerCase().trim();
+        const developerFilter = collectionFilterDeveloper.value; // Get selected developer
+        const platformFilter = collectionFilterPlatform.value;   // Get selected platform
+
+        console.log(`Filtering by: Title='${titleFilter}', Dev='${developerFilter}', Platform='${platformFilter}'`);
+
+        let filteredData = collectionData.filter(cardMeta => {
+             // Title Filter (keep existing)
+             const titleMatch = !titleFilter || cardMeta.name?.toLowerCase().includes(titleFilter);
+
+             // Developer Filter
+             const developerMatch = !developerFilter || cardMeta.developer === developerFilter;
+
+             // Platform Filter (check if selected platform is in the card's array)
+             const platformMatch = !platformFilter || (Array.isArray(cardMeta.platforms) && cardMeta.platforms.includes(platformFilter));
+
+             return titleMatch && developerMatch && platformMatch; // Must match all active filters
+        });
+        // --- End Filtering ---
+
+
+        // --- Apply Sorting (with Normalization for Rating) ---
+        const sortValue = collectionSortSelect.value;
+        console.log(`Sorting by: ${sortValue}`);
+        let sortedData = [...filteredData]; // Work on a copy
+
+        // Helper function to get a comparable numeric rating value (0-100 scale for stars/percent)
+        const getComparableRating = (meta) => {
+            if (meta.userRatingValue === null || meta.userRatingValue === undefined) {
+                return null; // Unrated items
+            }
+            const style = meta.userRatingStyle || 'score'; // Default to 'score' if style missing
+            const value = Number(meta.userRatingValue);
+
+            if (isNaN(value)) return null; // Invalid number
+
+            switch (style) {
+                case 'stars':
+                    // Scale 1-5 stars to 0-100 (approx. 20 points per star)
+                    // Clamp value 0-5 first for safety
+                    const clampedStarValue = Math.max(0, Math.min(5, value));
+                    return clampedStarValue * 20;
+                case 'percent':
+                     // Value is already 0-100, clamp for safety
+                    return Math.max(0, Math.min(100, value));
+                case 'score':
+                     // Treat score differently - map to a higher range or keep as is?
+                     // To sort them separately or alongside?
+                     // Option A: Keep score as is (0-99999) - will sort differently
+                     // return value;
+                     // Option B: Normalize score to 0-100 (loses precision)
+                      return Math.max(0, Math.min(100, Math.round(value / 999.99)));
+                     // Option C: Map score to a very high number so it always sorts last/first if mixed?
+                     // return 100000 + value; // To sort scores after stars/percent
+                     // Let's go with Option A for now - keep score value separate
+                     return value; // Keep original score value
+                default:
+                    return null; // Unknown style
+            }
+        };
+
+        sortedData.sort((aMeta, bMeta) => {
+             switch (sortValue) {
+                 case 'name-asc': return (aMeta.name || '').localeCompare(bMeta.name || '');
+                 case 'name-desc': return (bMeta.name || '').localeCompare(aMeta.name || '');
+                 case 'release-asc': return (aMeta.releaseTimestamp || 0) - (bMeta.releaseTimestamp || 0);
+                 case 'release-desc': return (bMeta.releaseTimestamp || 0) - (aMeta.releaseTimestamp || 0);
+                 case 'rating-asc': { // Sort Low to High
+                     const ratingA = getComparableRating(aMeta);
+                     const ratingB = getComparableRating(bMeta);
+                     const styleA = aMeta.userRatingStyle || 'score';
+                     const styleB = bMeta.userRatingStyle || 'score';
+
+                     // Handle nulls (unrated) - sort them last
+                     if (ratingA === null && ratingB === null) return 0;
+                     if (ratingA === null) return 1; // a is null, put it after b
+                     if (ratingB === null) return -1; // b is null, put it after a
+
+                     // If styles differ and one is score, sort score separately (e.g., after others)
+                     // This example sorts scores AFTER stars/percent
+                     if (styleA === 'score' && styleB !== 'score') return 1; // Sort a (score) after b
+                     if (styleA !== 'score' && styleB === 'score') return -1; // Sort b (score) after a
+
+                     // If styles are the same (or both not score), compare normalized/original values
+                     return ratingA - ratingB;
+                 }
+                 case 'rating-desc': { // Sort High to Low
+                     const ratingA = getComparableRating(aMeta);
+                     const ratingB = getComparableRating(bMeta);
+                     const styleA = aMeta.userRatingStyle || 'score';
+                     const styleB = bMeta.userRatingStyle || 'score';
+
+                     // Handle nulls (unrated) - sort them last
+                     if (ratingA === null && ratingB === null) return 0;
+                     if (ratingA === null) return 1; // a is null, put it after b
+                     if (ratingB === null) return -1; // b is null, put it after a
+
+                     // Sort scores AFTER stars/percent
+                     if (styleA === 'score' && styleB !== 'score') return 1;
+                     if (styleA !== 'score' && styleB === 'score') return -1;
+
+                     // Compare values (descending)
+                     return ratingB - ratingA;
+                 }
+				 // Developer Sort
+                 case 'developer-asc': return (aMeta.developer || '').localeCompare(bMeta.developer || '');
+                 // Add user number sorting later
+                 default: return 0;
+             }
+        });
+
+
+        // --- Render Cards ---
+         if (sortedData.length === 0) {
+              collectionGrid.innerHTML = '<p class="info-message">No game cards match the current filter.</p>';
+              return;
+         }
+
+        sortedData.forEach(meta => { // Iterate through sorted & filtered metadata
+             const cardElement = document.createElement('div');
+             cardElement.classList.add('game-card');
+             cardElement.dataset.gameId = meta.id;
+
+             // Use correct relative path for cover (../images/...)
+             const coverPath = meta.coverUrl ? meta.coverUrl.replace('t_cover_big', 't_cover_small') : ''; // Get small cover URL
+             // Note: saveResultsHtml adjusted paths to ../images already, so use that directly
+             // For display *here*, we might need paths relative to index.html? No, let's assume paths in meta are correct for this view.
+             // If paths were saved as ../images, we need to remove ../ for display here. Let's adjust saveResultsHtml metadata saving.
+             // *** Correction Needed: Save absolute-like paths (/images/...) in metadata ***
+
+             // --- Let's assume metadata.coverUrl is saved as the FULL URL from IGDB ---
+             // Use higher quality cover image instead of lower (t_cover_small)
+             // const displayCoverUrl = meta.coverUrl ? meta.coverUrl.replace('t_cover_big', 't_cover_small') : '';
+			 const displayCoverUrl = meta.coverUrl || ''; // Use the URL directly from metadata
+
+			 // --- Update Card Rendering for Played On Logo ---
+             let playedOnHtml = '';
+             if (meta.userPlatform) {
+                 const logoPath = getLogoPathForPlatform(meta.userPlatform); // Get logo for saved platform
+                 playedOnHtml = `
+                    <p class="played-on-section">
+                        <small>Played on:</small>
+                        <img src="${logoPath}" alt="${meta.userPlatform}" title="${meta.userPlatform}" onerror="this.style.display='none'">
+                    </p>`;
+             }
+             // --- End Played On Logo ---
+			 
+             cardElement.innerHTML = `
+                 ${displayCoverUrl ? `<img src="${displayCoverUrl}" alt="${meta.name || ''} Cover" class="cover" loading="lazy" onerror="this.style.display='none'">` : '<div class="cover-placeholder">No Cover</div>'}
+                 <h4>${meta.name || 'No Title'}</h4>
+                 <p>${meta.developer || 'N/A'}</p>
+                 <p>${meta.releaseDate || 'N/A'}</p>
+                 ${meta.userRatingValue !== null ? `<p>${getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue)}</p>` : ''}
+				 ${playedOnHtml}
+				 <a href="results/${encodeURIComponent(meta.sourceFile)}" target="_blank" title="Open Saved HTML"><small>🔗️ Open Saved HTML</small></a>
+		   `;
+             collectionGrid.appendChild(cardElement);
+        });
+         console.log(`Rendered ${sortedData.length} cards.`);
+
+    } // End renderCollectionGrid
+
 
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
