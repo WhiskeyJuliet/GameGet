@@ -3,91 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameGet Result - Crystal Caves</title>
-    <!-- Include Google Font Link -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <title>GameGet Card - Doom + Doom II</title> <!-- Changed title -->
+    <!-- Embed Metadata -->
+    <meta name="gameget:id" content="313126">
+    <meta name="gameget:name" content="Doom + Doom II">
+    <meta name="gameget:developer" content="id Software">
+    <meta name="gameget:releaseDate" content="8 August 2024">
+    <meta name="gameget:releaseTimestamp" content="1723075200">
+    <meta name="gameget:platforms" content="Xbox Series X|S,PlayStation 4,PC (Microsoft Windows),PlayStation 5,Xbox One,Nintendo Switch">
+    <meta name="gameget:coverUrl" content="https://images.igdb.com/igdb/image/upload/t_cover_big/co8npi.jpg">
+    <meta name="gameget:userRatingValue" content="5">
+    <meta name="gameget:userRatingStyle" content="stars">
+    <meta name="gameget:storeLinks" content="[{"name":"GOG","url":"https://www.gog.com/en/game/doom_doom_ii"},{"name":"Steam","url":"https://store.steampowered.com/app/2280/"}]">
+    <meta name="gameget:userPlatform" content="PC (Microsoft Windows)">
+    <!-- Embed Font Definition -->
+    <style id="local-font-face">@font-face { font-family: 'pxSans'; src: url('../fonts/pxSans.woff') format('woff'); }</style>
     <style>
-        /* --- Embedded Main Styles (with adjusted local font path) --- */
-        /* === Define Local Font === */
-@font-face {
-  font-family: 'pxSans'; /* Choose a name for your font */
-  src: url('../fonts/pxSans.woff') format('woff'); /* Path relative to the public root */
-  /* Optional: Specify weight/style if the file is specific */
-  /* font-weight: normal; */
-  /* font-style: normal; */
-}
+        /* Embedded Base Styles */
+        /* === CSS Variables (Defaults - Light Theme) === */
 
-/* === CSS Variables (Defaults - Light Theme) === */
-:root {
-    /* Color Palette */
-    --bg-color: #f8f9fa;
-    --element-bg: #ffffff;
-    --text-color: #343a40;
-    --text-muted: #6c757d;
-    --border-color: #dee2e6;
-    --border-light: #e9ecef;
-    --primary-color: #007bff;
-    --primary-hover: #0056b3;
-    --accent-color: #f1f3f5; /* Used for hover, tags etc */
-    --accent-darker: #ced4da;
-    --error-color: #dc3545;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-    --shadow-light: rgba(0, 0, 0, 0.07);
-
-    /* Font */
-    --body-font: 'pxSans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Default Font */
-}
 
 /* === Dark Theme === */
-body[data-theme="dark"] {
-    --bg-color: #212529;
-    --element-bg: #343a40;
-    --text-color: #f8f9fa;
-    --text-muted: #adb5bd;
-    --border-color: #495057;
-    --border-light: #495057;
-    --primary-color: #0d6efd; /* Slightly brighter blue for dark */
-    --primary-hover: #0b5ed7;
-    --accent-color: #495057;
-    --accent-darker: #6c757d;
-    --error-color: #f86c7d;
-    --shadow-color: rgba(255, 255, 255, 0.05);
-    --shadow-light: rgba(255, 255, 255, 0.07);
-}
+
 
 /* === Purple Theme === */
-body[data-theme="purple"] {
-    --bg-color: #4a345c;
-    --element-bg: #3b3440;
-    --text-color: #f8f9fa;
-    --text-muted: #adb5bd;
-    --border-color: #35293f;
-    --border-light: #35293f;
-    --primary-color: #9612db; 
-    --primary-hover: #790eb1;
-    --accent-color: #35293f;
-    --accent-darker: #6c757d;
-    --error-color: #f86c7d;
-    --shadow-color: rgba(255, 255, 255, 0.05);
-    --shadow-light: rgba(255, 255, 255, 0.07);
-}
+
 
 /* === Hotdog Stand Theme === */
-body[data-theme="hotdogstand"] {
-    --bg-color: #FF0000;
-    --element-bg: #FFFF00;
-    --text-color: #000000; 
-    --text-muted: #000000;
-    --border-color: #000000;
-    --border-light: #000000;
-    --primary-color: #000000; 
-    --primary-hover: #808080;
-    --accent-color: #FF0000;
-    --accent-darker: #CED4DA;
-    --error-color: #DC3545;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-    --shadow-light: rgba(0, 0, 0, 0.07);
-}
+
+
+/* Super Secret Theme shhhhhh */
 
 
 /* === Global Styles & Body (Using Variables) === */
@@ -101,7 +46,7 @@ body {
     font-family: var(--body-font); /* Apply font variable */
     line-height: 1.6;
     max-width: 800px;
-    margin: 40px auto;
+    margin: 20px auto 40px auto;
     padding: 0 15px;
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -109,30 +54,62 @@ body {
 }
 
 /* === Headings & Basic Text === */
+
+/* Main Title Container */
+.main-title-container {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: center;   /* Center items horizontally */
+    margin-bottom: 30px;   /* Space below the whole title block */
+    gap: 5px;             /* Small gap between logo, h1, h3 */
+}
+
+/* Main Title Logo */
+.main-title-logo {
+    width: 128px;  /* Adjust desired logo display size (e.g., 80px) */
+    height: 128px; /* Maintain aspect ratio or set specific height */
+    object-fit: contain;
+    margin-bottom: 10px; /* Add some space below the logo */
+	margin-right: 4px; /* Optical alignment adjustment */ 
+	content: url('images/GameGet_Logo.png'); /* Default logo */
+    transition: content 0.3s ease; /* Optional smooth transition */
+}
+
+body[data-theme="dannyvalz"] .main-title-logo {
+    content: url('images/GameGet_Logo_alt.png'); /* Alternate logo */
+}
+
+/* Adjust H1 styles */
 h1 {
-    text-align: center;
-    color: var(--text-color); /* Use text color or a specific heading color */
-    margin-bottom: 15px;
+    text-align: center; /* Ensure H1 is centered */
+    color: var(--text-color);
+    margin-bottom: 0; /* Remove default margins */
+    margin-top: 0;
     font-weight: 600;
+    font-size: 2.5rem; /* Adjust size */
+    line-height: 1.2;
 }
 
 h2 { /* Added for settings panel */
     margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin-bottom: 20px;
     font-weight: 600;
     color: var(--text-color);
 }
 
 h3 {
-    text-align: center;
-    color: var(--text-color); /* Use text color or a specific heading color */
-    margin-bottom: 15px;
-    font-weight: 300;
+    text-align: center; /* Ensure H3 is centered */
+    color: var(--text-muted);
+    margin-top: 0; /* Remove default margins */
+    margin-bottom: 0;
+    font-weight: 400;
+    font-size: 1.1rem;
+    line-height: 1.3;
 }
 
 p {
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 6px;
 }
 
 a {
@@ -143,6 +120,10 @@ a {
 a:hover {
     text-decoration: underline;
     color: var(--primary-hover);
+}
+
+input {
+	font-family: inherit;
 }
 
 /* === Search Input Area === */
@@ -214,6 +195,7 @@ a:hover {
     text-align: center;
     transition: all 0.3s ease;
 	margin-bottom: 20px; /* Add space below results, before button */
+	position: relative; /* Needed for absolute positioning inside container*/
 }
 
 /* OBS Button Container Styles */
@@ -235,6 +217,7 @@ a:hover {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+	font-family: inherit;
     font-size: 0.95rem;
     font-weight: 500;
     transition: background-color 0.2s ease, transform 0.1s ease;
@@ -313,27 +296,112 @@ a:hover {
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
     font-size: 1em;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+	flex-wrap: wrap; /* Allows year/logos to drop below if needed */
+    gap: 15px; /* Add gap between left and right */
 }
 
 .search-result-item:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-darker);
-    transform: translateY(-1px);
+    /*transform: translateY(-1px);*/
+}
+
+.result-item-left {
+    display: flex; /* Change to flex row */
+    align-items: baseline; /* Align text baselines */
+    gap: 12px; /* Gap between title, type, logos */
+    flex-grow: 1; /* Allow this section to take up most space */
+    flex-shrink: 1; /* Allow shrinking */
+    min-width: 0; /* Important for allowing shrinking */
 }
 
 .game-title {
-    flex-grow: 1;
-    margin-right: 15px;
-    font-weight: 500;
+ font-weight: 500;
+    line-height: 1.3;
+    margin-right: 0;
+    white-space: nowrap; /* Prevent title itself from wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ... if title is too long */
+    flex-shrink: 1; /* Allow title to shrink */
+}
+
+.game-type {
+    display: inline-block; /* Allows background color and padding */
+    font-size: 0.75em; /* Make it smaller */
+    font-style: normal; /* Override potential parent italics */
+    font-weight: 600; /* Make it slightly bolder */
+    padding: 4px 5px 1px 6px; /* Add some padding */
+    border-radius: 4px; /* Slightly rounded corners */
+    line-height: 1.2; /* Adjust line height */
+    margin-top: 0; /* Small space below title */
+    /* Default background and text color (can be muted) */
+	flex-shrink: 0;
+    white-space: nowrap; /* Keep type on one line */
+    background-color: var(--accent-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-light);
+}
+
+/* NEW: Specific Type Highlights */
+.type-main-game { background-color: #007bff; color: #fff; border-color: #0056b3; }
+.type-mod { background-color: #6c757d; color: #fff; border-color: #5a6268; }
+.type-remaster { background-color: #1a6833; color: #fff; border-color: #124723; } /* Dark Green */
+.type-remake { background-color: #28a745; color: #fff; border-color: #1e7e34; } /* Lighter Green */
+.type-port, .type-version-port { background-color: #ffc107; color: #212529; border-color: #d39e00; } /* Yellow */
+.type-expansion, .type-standalone-expansion, .type-expanded-game { background-color: #17a2b8; color: #fff; border-color: #117a8b; } /* Turquoise */
+.type-bundle { background-color: #6f42c1; color: #fff; border-color: #5a32a3;} /* Purple */
+.type-game, /* Default Game type, maybe use primary? */
+.type-fork { background-color: var(--primary-color); color: #fff; border-color: var(--primary-hover); }
+/* Add more rules if other types (DLC etc.) are included */
+
+/* Dark Theme Overrides for Type Highlights (Ensure good contrast) */
+body[data-theme="dark"] .type-main-game { background-color: #0d6efd; border-color: #0b5ed7;}
+body[data-theme="dark"] .type-mod { background-color: #6c757d; border-color: #5a6268; }
+body[data-theme="dark"] .type-remaster { background-color: #208344; border-color: #1a6833; }
+body[data-theme="dark"] .type-remake { background-color: #2aaa4a; border-color: #28a745; }
+body[data-theme="dark"] .type-port, body[data-theme="dark"] .type-version-port { background-color: #ffca2c; color: #212529; border-color: #ffc107; }
+body[data-theme="dark"] .type-expansion, body[data-theme="dark"] .type-standalone-expansion, body[data-theme="dark"] .type-expanded-game { background-color: #20c9e0; border-color: #17a2b8; }
+body[data-theme="dark"] .type-bundle { background-color: #8252d5; border-color: #6f42c1; }
+body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { background-color: var(--primary-color); color: #fff; border-color: var(--primary-hover); }
+/* Add overrides for other custom themes (purple, hotdogstand) if needed for contrast */
+
+/* Container for Platform Logos in List */
+.result-platform-logos {
+/* Remove margin-top */
+    margin-top: 0;
+    display: flex; /* Keep logos in a row */
+    flex-wrap: nowrap; /* Prevent logos wrapping by default */
+    gap: 12px; /* Smaller gap between logos */
+    /* --- Prevent logo container from shrinking initially --- */
+    flex-shrink: 0;
+    /* --- Hide overflow if too many logos --- */
+    overflow: hidden;
+}
+
+/* Style for individual logos in the list */
+.result-list-platform-logo {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+	margin-right: 0.5em;
+	margin-top:1px;
+}
+
+/* Right Container (Year) */
+.result-item-right {
+    flex-shrink: 0; /* Prevent year from shrinking */
+    /* Remove padding-top if set */
+    padding-top: 0;
+    /* Add some left margin for clear separation */
+    margin-left: auto; /* Push year to the far right */
 }
 
 .game-shortdate {
     font-size: 0.9em;
     color: var(--text-muted);
     white-space: nowrap;
-    flex-shrink: 0;
 }
 
 /* === Game Details Display === */
@@ -347,11 +415,11 @@ a:hover {
 }
 
 .game-info > img {
-    width: 120px;
+    width: auto;
     height: auto;
-    max-width: 30%;
+    max-width: 24%;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0px;
     box-shadow: 0 2px 4px var(--shadow-light);
     flex-shrink: 0;
     object-fit: cover;
@@ -364,28 +432,41 @@ a:hover {
 
 .game-details h2 {
     margin-top: 0;
-    margin-bottom: 12px;
+    margin-bottom: 5px;
     color: var(--text-color);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
 }
 
 .game-details p {
-    margin: 8px 0;
-    font-size: 1rem;
+    /*margin: 8px 0;*/
     color: var(--text-color);
 }
 
+/* Style for Release Date (adjust margin if needed) */
+.game-details p:has(> strong:contains("Release Date")) {
+     margin-top: 0;
+     margin-bottom: 0;
+}
+
+/* Style for Platforms Label */
+.game-details p:has(> strong:contains("Platforms")) {
+     margin-top: 0;
+     margin-bottom: 8px;
+}
+
+
 .game-details strong {
-    color: var(--text-color); /* Ensure strong text matches main text */
+    color: var(--text-muted); /* Ensure strong text matches main text */
     font-weight: 600;
+	font-size: 1.25rem;
 }
 
 /* Platform Tags Styling */
 .game-details ul {
     list-style: none;
     padding: 0;
-    margin: 10px 0 0 0;
+    margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -403,31 +484,191 @@ a:hover {
     gap: 10px; /* Spacing between platform items */
 }
 
+/* Style for Developer */
+.game-developer {
+    font-size: 1.5em !important;
+    color: var(--text-muted);
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 5px; /* Space below developer */
+    font-style: italic;
+}
+.game-developer strong {
+	font-size: 1.5rem !important;
+    color: var(--text-muted);
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* Rating Container Styles - Floating Top-Right */
+#game-rating-container {      
+    margin-top: 6px; /* Space below release date */
+    margin-bottom: 10px; /* Space above platforms label/list */
+    padding: 0; /* Vertical padding */
+    /*border-top: 1px dashed var(--border-light);*/
+    /*border-bottom: 1px dashed var(--border-light);*/
+    min-height: auto;
+    display: flex; /* Use flex to center content */
+    justify-content: left;
+    align-items: center;
+    gap: 10px;
+    
+}
+
+/* Ensure rating container is hidden correctly when off */
+#game-rating-container:empty, /* Hide if empty */
+body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add this class) */
+{
+    display: none;
+	margin: 0;
+	padding: 0;
+}
+
+
+/* Star Rating Styles */
+.rating-stars {
+    font-size: 1.8em; /* Adjust star size */
+    line-height: 1;
+    cursor: pointer;
+	white-space: nowrap;
+	margin-top: 5px;
+    margin-bottom: 6px;
+}
+.rating-stars span { /* Individual star */
+    color: var(--accent-darker); /* Empty star color */
+    transition: color 0.1s ease-in-out;
+    margin: 0 1px;
+}
+.rating-stars span.filled,
+.rating-stars:hover span.hover { /* Filled or hovered star */
+    color: #ffc107; /* Gold color for filled/hover */
+}
+/* Make stars grey again after the hovered one */
+.rating-stars:hover span.hover ~ span {
+     /*color: var(--accent-darker);*/
+}
+
+/* Percent/Score Input Styles */
+.rating-input-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.rating-input {
+    padding: 4px 6px;
+    font-size: 1.8em; 
+    font-weight: bold;
+    text-align: left;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    color: var(--text-color);
+	border: none;
+	font-family: inherit;
+}
+/* Hide spinner buttons on number input (optional) */
+.rating-input::-webkit-outer-spin-button,
+.rating-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.rating-input[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Specific width for percent */
+.rating-input-percent {
+    width: 76px;
+    text-align: center; /* Align right for percent */
+}
+
+/* Specific width for score */
+.rating-input-score {
+    width: 98px;
+    text-align: center;
+}
+
+.percent-sign {
+    font-size: 1.4em; 
+    font-weight: bold;
+    color: var(--text-muted);
+	text-align: left;
+	margin-left: 2px;
+}
+
+/* Style for Score Label */
+.score-label {
+     font-size: 0.9em; /* Smaller label */
+     color: var(--text-muted);
+     margin-left: 2px; /* Small space after number */
+}
+
+/* Static rating display (for saved HTML) */
+.static-rating {
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--text-color);
+    /* Add any other desired styling */
+}
+.static-rating .stars { /* Style stars within static display */
+     font-size: 1.2em; /* Match visual size */
+     color: #ffc107; /* Gold */
+     letter-spacing: 1px;
+}
+.static-rating .stars-empty {
+    color: var(--accent-darker); /* Empty stars */
+}
+
 /* Style for EACH platform list item (<li>) */
 .platform-item {
     background-color: var(--accent-color);
     color: var(--text-muted);
-    padding: 5px 10px; /* Adjust padding as needed */
-    border-radius: 15px; /* Adjust for desired shape */
-    font-size: 0.85em;
+    padding: 6px 8px 6px 8px; /* Adjust padding as needed */
+    border-radius: 4px; /* Adjust for desired shape */
+    font-size: 1rem;
+	font-weight: 600;
     line-height: 1.4;
     border: 1px solid var(--border-light);
     /* --- Use Flexbox to align icon and text --- */
     display: inline-flex; /* Changed from block-level flex on UL */
     align-items: center; /* Vertically center icon and text */
     gap: 6px; /* Space between icon and text */
+	cursor: pointer; /* <<< ADD: Indicate it's clickable */
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* Add transition */
+}
+
+/* Style for the selected/highlighted platform */
+.platform-item-selected {
+    background-color: var(--accent-darker);
+    /* Optionally change text color for better contrast */
+    color: var(--text-color);
+    border-color: var(--border-color); /* Slightly darker border? */
+	padding: 8px 10px 8px 10px;
+	margin-top: -2px;
+	font-size: 1.1rem;
+	line-height: 1.3;
 }
 
 /* Style for the platform logo image (<img>) */
 .platform-logo {
-    width: 16px;
-    height: 16px;
-    object-fit: contain; /* Scale nicely if source is larger */
-    flex-shrink: 0; /* Prevent icon from shrinking */
-	max-width: none;     /* Reset any potential inherited max-width */
-    max-height: none;    /* Reset any potential inherited max-height */
-    /* vertical-align: middle; */ /* Not needed with flex align-items: center */
+    /* Use CSS Variable for size, fallback to 16px */
+    width: var(--platform-logo-size, 16px);
+    height: var(--platform-logo-size, 16px);
+    object-fit: contain;
+    flex-shrink: 0;
+    max-width: none; /* Prevent override */
+    max-height: none;/* Prevent override */
+    /* Remove explicit width/height attributes set in JS later */
 }
+
+/* NEW: Class to hide the platform text */
+.platform-text-hidden .platform-name-text { /* Target the span inside */
+    display: none;
+}
+
+/* Optional: Adjust gap if text is hidden */
+.platform-text-hidden {
+    gap: 0; /* Remove gap when text is hidden */
+}
+
 
 /* === Store Links === */
 .store-links-container {
@@ -438,7 +679,20 @@ a:hover {
     flex-wrap: wrap;
     gap: 15px;
     justify-content: flex-start;
-    min-height: 30px; /* Give it some height for loading msg */
+    min-height: 30px;
+    transition: opacity 0.3s ease, height 0.3s ease; /* Add smooth transition */
+}
+
+body.store-links-hidden .store-links-container {
+    display: none;
+    /* Alternatively, use opacity and height for a fade effect: */
+    /* opacity: 0; */
+    /* height: 0; */
+    /* min-height: 0; */
+    /* overflow: hidden; */
+    /* margin-top: 0; */
+    /* padding-top: 0; */
+    /* border-top: none; */
 }
 
 .store-button {
@@ -470,13 +724,29 @@ a:hover {
     flex-shrink: 0; /* Prevent logo from shrinking */
 }
 
-/* Specific GOG Button Style */
+/* Store Button Styles */
 .gog-button {
-    background-color: #8a43ce; /* GOG purple */
+    background-color: #513968;
     color: #ffffff;
 }
 .gog-button:hover {
     background-color: #6e36a8;
+}
+
+.steam-button {
+	background-color: #26323e; 
+    color: #ffffff;
+}
+.steam-button:hover {
+	background-color: #203b56;
+}
+
+.epic-games-button {
+	background-color: #202024; 
+    color: #ffffff;
+}
+.epic-games-button:hover {
+	background-color: #404044;
 }
 
 /* Loading/Error messages within store container */
@@ -556,6 +826,10 @@ a:hover {
     transform: translateX(0); /* Slide in */
 }
 
+#settings-panel h2 {
+	
+}
+
 #settings-close {
     position: absolute;
     top: 3px;
@@ -586,6 +860,48 @@ a:hover {
     color: var(--text-color);
 }
 
+/* Style for rows within settings groups */
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Align label and control */
+    margin-bottom: 12px;
+    gap: 15px; /* Space between label and control */
+}
+.setting-row label:first-child { /* Style the main label for the row */
+     font-size: 0.95em;
+     color: var(--text-muted);
+     flex-shrink: 0; /* Prevent label from shrinking too much */
+}
+/* Ensure nested radio group labels are styled normally */
+.setting-row .radio-group label {
+    font-size: 1em; /* Reset font size */
+    color: var(--text-color); /* Reset color */
+    margin-bottom: 8px; /* Adjust spacing */
+    display: block; /* Make rating style options stack vertically */
+    margin-right: 0;
+	text-align: left;
+}
+.setting-row .radio-group {
+    text-align: left; /* Align radio options right */
+    flex-grow: 1; /* Allow radio group to take space */
+}
+
+
+
+
+/* Style for number input */
+.setting-row input[type="number"] {
+    width: 60px; /* Fixed width */
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--element-bg);
+    color: var(--text-color);
+    text-align: left;
+}
+
+
 /* Radio buttons and Select styling */
 .radio-group label {
     display: block;
@@ -598,8 +914,17 @@ a:hover {
     accent-color: var(--primary-color); /* Style radio button itself */
 }
 
+/* Style for Font Row */
+.font-control-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
 #font-selector {
-    width: 100%;
+	flex-grow: 1;
+    width: auto;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -613,6 +938,22 @@ a:hover {
     border-color: var(--primary-color);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 0, 123, 255), 0.25);
+}
+
+#refresh-fonts-button {
+    flex-shrink: 0; /* Prevent button from shrinking */
+    padding: 6px 8px; /* Adjust padding */
+    line-height: 1;
+    background-color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+#refresh-fonts-button:hover {
+    background-color: var(--accent-darker);
+    color: var(--text-color);
 }
 
 /* === Custom Color Editor Styles === */
@@ -748,9 +1089,34 @@ a:hover {
     box-shadow: 0 4px 6px var(--shadow-color);
 }
 
-
-        /* --- Applied Theme/Custom Variables --- */
-        body {
+/* --- IMPORTANT --- */
+/* Ensure theme colors are applied correctly to elements like inputs, buttons, etc. */
+/* Check elements in the secret theme and adjust if needed. */
+/* For example, the input text color might need adjustment: */
+body[data-theme="dannyvalz"] #gameInput,
+body[data-theme="dannyvalz"] #font-selector,
+body[data-theme="dannyvalz"] .color-input-group .hex-input {
+    color: var(--text-color); /* Ensure input text uses the theme's text color */
+}
+body[data-theme="dannyvalz"] #gameInput::placeholder {
+     color: var(--text-muted); /* Use muted text for placeholder */
+     opacity: 0.7;
+}
+body[data-theme="dannyvalz"] .rating-stars span.filled { 
+     color: #6255A4; /* Rating star colour */
+}
+body[data-theme="dannyvalz"] .rating-stars:hover span.hover { 
+     color: #6255A4; /* Rating star colour */
+}
+}
+/* Check button text colors for contrast */
+body[data-theme="dannyvalz"] #searchButton { color: var(--text-color); } /* Text on primary */
+body[data-theme="dannyvalz"] #reset-custom-colors { color: var(--text-color); } /* Text on muted */
+body[data-theme="dannyvalz"] .import-export-buttons button { color: var(--text-color); } /* Text on accent-darker */
+body[data-theme="dannyvalz"] #save-obs-button { color: var(--text-color); } /* Text on primary */
+body[data-theme="dannyvalz"] .store-button { color: #ffffff; } /* Override default text color for store buttons */
+        /* Inject Computed Variables into :root */
+        :root {
     --bg-color: #45283c;
     --element-bg: #45283c;
     --text-color: #ffffff;
@@ -763,19 +1129,23 @@ a:hover {
     --accent-darker: #7d165c;
     --error-color: #dc3545;
     --body-font: 'pxSans', sans-serif;
+    --platform-logo-size: 32px;
 
         }
-
-        /* --- OBS Specific Overrides --- */
-        body { margin: 0; padding: 0; }
-        #results { border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
-        #results button { display: none !important; }
+        /* OBS Specific Overrides */
+        body { position: relative; padding: 0;}
+        #results { position: relative; border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        /* Hide interactive elements specifically for OBS */
+        #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
+        #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
+		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
     </style>
 </head>
-<body data-theme="custom">
-    <!-- Results div content with adjusted image paths -->
+<body class="platform-text-hidden">
     <div id="results">
-        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co2ptx.jpg" alt="Crystal Caves Box Art"><div class="game-details"><h2>Crystal Caves</h2><p><strong>Release Date:</strong> 23 October 1991</p><p><strong>Platforms:</strong></p><ul><li class="platform-item"><img src="../images/platforms/linux.png" alt="Linux logo" class="platform-logo" width="16" height="16"><span>Linux</span></li><li class="platform-item"><img src="../images/platforms/windows.png" alt="PC (Microsoft Windows) logo" class="platform-logo" width="16" height="16"><span>PC (Microsoft Windows)</span></li><li class="platform-item"><img src="../images/platforms/mac.png" alt="Mac logo" class="platform-logo" width="16" height="16"><span>Mac</span></li><li class="platform-item"><img src="../images/platforms/dos.png" alt="DOS logo" class="platform-logo" width="16" height="16"><span>DOS</span></li></ul><div class="store-links-container"></div></div></div>
+        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co8npi.jpg" alt="Doom + Doom II Box Art"><div class="game-details"><h2>Doom + Doom II</h2><p class="game-developer"><strong>id Software</strong></p><p><strong>8 August 2024</strong></p><div id="game-rating-container"><span class="static-rating"><span class="stars">★★★★★</span><span class="stars-empty"></span></span></div><ul><li class="platform-item platform-item-selected" data-platform-name="PC (Microsoft Windows)"><img src="../images/platforms/windows.png" alt="PC (Microsoft Windows) logo" class="platform-logo"><span class="platform-name-text">PC (Microsoft Windows)</span></li><li class="platform-item" data-platform-name="Xbox Series X|S"><img src="../images/platforms/xboxseriesx.png" alt="Xbox Series X|S logo" class="platform-logo"><span class="platform-name-text">Xbox Series X|S</span></li><li class="platform-item" data-platform-name="PlayStation 4"><img src="../images/platforms/ps4.png" alt="PlayStation 4 logo" class="platform-logo"><span class="platform-name-text">PlayStation 4</span></li><li class="platform-item" data-platform-name="PlayStation 5"><img src="../images/platforms/ps5.png" alt="PlayStation 5 logo" class="platform-logo"><span class="platform-name-text">PlayStation 5</span></li><li class="platform-item" data-platform-name="Xbox One"><img src="../images/platforms/xboxone.png" alt="Xbox One logo" class="platform-logo"><span class="platform-name-text">Xbox One</span></li><li class="platform-item" data-platform-name="Nintendo Switch"><img src="../images/platforms/switch.png" alt="Nintendo Switch logo" class="platform-logo"><span class="platform-name-text">Nintendo Switch</span></li></ul></div></div>
     </div>
 </body>
 </html>
