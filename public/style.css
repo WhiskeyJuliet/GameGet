@@ -17,6 +17,10 @@
 
     /* Font */
     --body-font: 'pxSans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Default Font */
+
+	/* scrollbar-gutter overflow */
+	overflow:auto;
+	scrollbar-gutter: stable;
 }
 
 /* === Dark Theme === */
@@ -111,9 +115,9 @@ body {
 /* Main Wrapper for Centering Content */
 .main-wrapper {
     max-width: 850px; /* Adjust overall content width */
-    margin: 0 auto 30px auto; /* Center horizontally, space below */
+    margin: 10px auto 0 auto; /* Center horizontally, space below */
     /*background-color: var(--element-bg); */
-    padding: 30px 40px; /* Padding inside wrapper */
+    /*padding: 30px 40px 0px 40px; */
     border-radius: 8px;
     /*box-shadow: 0 4px 10px var(--shadow-color);*/
 }
@@ -215,7 +219,7 @@ input {
 .tab-button.active {
     color: var(--primary-color);
     border-bottom-color: var(--primary-color); /* Highlight active tab */
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 /* === Tab Content === */
@@ -278,6 +282,9 @@ input {
     display: flex;
     margin-bottom: 30px;
     gap: 10px;
+    width: 100%;
+    max-width: 850px; /* Limit width */
+    margin-bottom: 20px;
 }
 
 #gameInput {
@@ -342,9 +349,7 @@ input {
     align-items: center;
     text-align: center;
     transition: all 0.3s ease;
-	width: 100%;
-    margin-left: auto;
-    margin-right: auto;
+
 	margin-bottom: 20px; /* Add space below results, before button */
 	position: relative; /* Needed for absolute positioning inside container*/
 }
@@ -354,21 +359,23 @@ input {
     text-align: center; /* Center the button within the container */
     margin-bottom: 20px; /* Space below the button, before disclaimer */
     min-height: 50px; /* Give it some space even when empty */
-	width: 100%;
-    max-width: 750px;
-    margin-left: auto;
-    margin-right: auto;
+	/* --- Use Flexbox to space buttons --- */
+    display: flex;
+    justify-content: center; /* Center buttons */
+    align-items: center;
+    gap: 15px; /* Space between buttons */
+    flex-wrap: wrap; /* Allow wrapping */
 }
 
-
-/* Styles for the button itself */
-#save-obs-button {
+/* Base styles for BOTH buttons */
+#save-obs-button,
+#add-to-collection-button { /* Apply to both */
     display: inline-flex;
     align-items: center;
     gap: 10px;
     padding: 10px 18px;
-    background-color: var(--primary-color);
-    color: #ffffff;
+    color: #ffffff; /* Assuming white text for both */
+	background-color: var(--primary-color); /* Use primary color */
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -377,16 +384,57 @@ input {
     font-weight: 500;
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
+#save-obs-button img,
+#add-to-collection-button img { /* Style icons */
+     width: 24px;
+     height: 24px;
+     vertical-align: middle;
+}
 
+
+//* Specific styles for Save OBS button */
+#save-obs-button {
+    
+}
 #save-obs-button:hover {
 	background-color: var(--primary-hover);
 }
 
 #save-obs-button:active {
-	transform: scale(0.98);
+    transform: scale(0.98);
 }
 
-#save-obs-button img { /* Keep icon styles */ }
+/* Specific styles for Add to Collection button */
+#add-to-collection-button {
+    background-color: var(--accent-darker); /* Use accent color */
+    color: var(--text-color); /* Use theme text color for contrast */
+}
+#add-to-collection-button:hover {
+	background-color: var(--primary-hover); /* Different hover */
+}
+#add-to-collection-button:active {
+    transform: scale(0.98);
+}
+/* Style for feedback message */
+.collection-feedback {
+    font-size: 0.85em;
+    font-style: italic;
+    color: var(--text-muted);
+    opacity: 0; /* Hidden initially */
+    transition: opacity 0.3s ease;
+    /* --- Force to new line --- */
+    flex-basis: 100%; /* Make it take full width, forcing wrap */
+    text-align: center; /* Center the text below buttons */
+    margin-top: 5px; /* Add a small gap above feedback */
+    /* margin-left: 10px; /* Remove this if set before */
+}
+.collection-feedback.show {
+    opacity: 1;
+}
+.collection-feedback.error {
+    color: var(--error-color);
+    font-weight: bold;
+}
 
 /* Info & Error Messages */
 .info-message {
@@ -1262,11 +1310,7 @@ transform: scale(0.8);
 #search-screen h1 { text-align: center; } /* Center H1 */
 #search-screen h3 { text-align: center; } /* Center H3 */
 
-.search-container { /* Make search wider */
-    width: 100%;
-    max-width: 770px; /* Limit width */
-    margin-bottom: 20px;
-}
+
 
 /* === Collection Screen Styles === */
 .collection-controls {
@@ -1392,7 +1436,7 @@ transform: scale(0.98);
     aspect-ratio: 3 / 4; /* Maintain aspect ratio for cover art */
     object-fit: cover; /* Cover the area */
     margin-bottom: 8px;
-    border-bottom: 1px solid var(--border-light);
+    border: 1px solid var(--border-light);
     background-color: var(--accent-color); /* Placeholder BG */
 	display: block; /* Remove extra space below image */
 }

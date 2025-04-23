@@ -1834,40 +1834,130 @@ function loadSettings() {
         gameInfoDiv.appendChild(detailsDiv);
         resultsDiv.appendChild(gameInfoDiv); // Add main info to the page
 		
-		// --- Create and Add "Save for OBS" Button to its own container ---
+		// --- Create BOTH Buttons ---
+
+        // 1. Add to Collection Button
+        const addButton = document.createElement('button');
+        addButton.id = 'add-to-collection-button';
+        addButton.type = 'button';
+        addButton.title = 'Save card to server collection (public/results/)';
+        const addIcon = document.createElement('img');
+        addIcon.src = 'images/floppy.png'; // Icon
+        addIcon.alt = 'Add';
+        addIcon.width = 24; addIcon.height = 24; addIcon.onerror = () => { addIcon.remove(); };
+        const addText = document.createElement('span');
+        addText.textContent = 'Add to Collection';
+        addButton.appendChild(addIcon);
+        addButton.appendChild(addText);
+
+        // 2. Save HTML for OBS Button
         const saveButton = document.createElement('button');
         saveButton.id = 'save-obs-button';
         saveButton.type = 'button';
-		
-        // ... (create saveIcon, saveText) ...
+        saveButton.title = 'Download card HTML file';
 		const saveIcon = document.createElement('img');
-        saveIcon.src = 'images/floppy.png'; // Verify this path is correct relative to index.html
-        saveIcon.alt = 'Save Icon';
-        // Size is controlled by CSS, but setting here helps layout consistency
-        saveIcon.width = 24;
-        saveIcon.height = 24;
-        saveIcon.onerror = () => { // Handle if button icon fails to load
-             console.error("Failed to load OBS save button icon: images/GameGet_Logo.png");
-             saveIcon.remove(); // Remove broken image
-        };
-
+        saveIcon.src = 'images/code.png'; // Icon
+        saveIcon.alt = 'Save';
+        saveIcon.width = 24; saveIcon.height = 24; saveIcon.onerror = () => { saveIcon.remove(); };
         const saveText = document.createElement('span');
-        saveText.textContent = 'Save HTML for OBS'; // Verify text content
-		
-         // --- Append BOTH icon and text to the button ---
+        saveText.textContent = 'Save HTML'; // Shorten text maybe
         saveButton.appendChild(saveIcon);
         saveButton.appendChild(saveText);
-        // --- End Append ---
-		
-		console.log("displayGameDetails: 'data' object before adding listener:", JSON.stringify(data, null, 2));
-		
-        // Add click listener
-        saveButton.addEventListener('click', () => {
-            saveResultsHtml(data); // Pass the game name for the filename
+
+        // Feedback span (shared by both buttons?)
+        const feedbackSpan = document.createElement('span');
+        feedbackSpan.classList.add('collection-feedback');
+
+        // --- Add Listeners for Buttons ---
+
+        // Listener for "Add to Collection"
+        addButton.addEventListener('click', async () => {
+            console.log("Add to Collection clicked.");
+            addButton.disabled = true;
+            saveButton.disabled = true; // Disable both during operation
+            feedbackSpan.textContent = 'Saving...';
+            feedbackSpan.classList.remove('error', 'show');
+            feedbackSpan.classList.add('show');
+
+            try {
+                // Generate the HTML content and filename using saveResultsHtml
+                // We need saveResultsHtml to RETURN the content and filename now
+                const result = await generateStaticHtml(data); // Use a helper
+
+                if (!result) { throw new Error("HTML generation failed."); }
+
+                // Send POST request to backend
+                const response = await fetch(`${API_BASE_URL}/api/saveToCollection`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ filename: result.filename, htmlContent: result.fullHtml })
+                });
+
+                if (response.ok) {
+                     console.log("Successfully saved to server collection.");
+                     feedbackSpan.textContent = 'Added!';
+                     feedbackSpan.classList.remove('error');
+                     setTimeout(() => feedbackSpan.classList.remove('show'), 2500); // Hide after 2.5s
+                } else {
+                     const errorData = await response.json().catch(()=>({error: `Server error ${response.status}`}));
+                     throw new Error(errorData.error || `Failed to save (status ${response.status})`);
+                }
+
+            } catch (error) {
+                console.error("Error adding to collection:", error);
+                feedbackSpan.textContent = `Error: ${error.message}`;
+                feedbackSpan.classList.add('error', 'show');
+                // Don't auto-hide error message
+            } finally {
+                 addButton.disabled = false;
+                 saveButton.disabled = false;
+            }
         });
-        // --- Append button to the DEDICATED container ---
+
+        // Listener for "Save HTML for OBS" (now just triggers download)
+        saveButton.addEventListener('click', async () => {
+             console.log("Save HTML clicked.");
+             addButton.disabled = true; // Disable both during operation
+             saveButton.disabled = true;
+             feedbackSpan.textContent = 'Preparing Download...';
+             feedbackSpan.classList.remove('error', 'show');
+             feedbackSpan.classList.add('show');
+
+             try {
+                // Generate HTML and filename
+                const result = await generateStaticHtml(data); // Use helper
+
+                if (!result) { throw new Error("HTML generation failed."); }
+
+                // Trigger download directly
+                const blob = new Blob([result.fullHtml], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = result.filename;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log(`Download triggered for ${link.download}.`);
+                feedbackSpan.textContent = 'Downloaded!';
+                setTimeout(() => feedbackSpan.classList.remove('show'), 2500);
+
+             } catch(error) {
+                 console.error("Error saving HTML for OBS:", error);
+                 feedbackSpan.textContent = `Error: ${error.message}`;
+                 feedbackSpan.classList.add('error', 'show');
+             } finally {
+                 addButton.disabled = false;
+                 saveButton.disabled = false;
+             }
+        });
+
+        // Append buttons and feedback to the container
+        obsButtonContainer.appendChild(addButton); // Add button first
         obsButtonContainer.appendChild(saveButton);
-        // --- End Save Button ---
+        obsButtonContainer.appendChild(feedbackSpan);
+
 		
 		// --- Populate Store Links ---
         let hasAnyStoreLink = false;
@@ -1988,24 +2078,22 @@ function loadSettings() {
         container.appendChild(link);
     } // End addStoreButton
 
-          // --- Function to Save HTML for OBS ---
- async function saveResultsHtml(gameData) { // Now accepts full gameData object
-		console.log("OBS SAVE: Received gameData:", JSON.stringify(gameData, null, 2));
-        const gameName = gameData.name || 'Untitled Game';
-        const gameId = gameData.id || Date.now();
-        console.log(`OBS SAVE: Starting generation for "${gameName}" (ID: ${gameId})`);
+ // --- Create NEW Helper Function to Generate Static HTML ---
+    // This extracts the common logic from the old saveResultsHtml
+    async function generateStaticHtml(gameData) {
+         const gameName = gameData.name || 'Untitled Game';
+         const gameId = gameData.id || Date.now();
+         console.log(`Generate HTML: Starting for "${gameName}" (ID: ${gameId})`);
 
-        requestAnimationFrame(async () => { // Use rAF for style computation timing
-            try {
-                // --- Step 0: Get current UI/Rating state ---
-                const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
-                // Get rating value for the specific game being saved
-                const ratingValue = (currentGameRating.gameId === gameData.id) ? currentGameRating.value : null;
-                const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
-                const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
+         try {
+            // Step 0: Get current settings (rating, stores, text visibility)
+            const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
+            const ratingValue = (currentGameRating.gameId === gameData.id) ? currentGameRating.value : null;
+            const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
+            const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
 
-                // --- Step 1: Clone #results content & modify clone for static output ---
-                console.log("OBS SAVE: Cloning #results div and modifying clone...");
+            // Step 1: Clone results & Modify clone
+            console.log("OBS SAVE: Cloning #results div and modifying clone...");
                 const resultsClone = resultsDiv.cloneNode(true);
                 // 1a: Inject Static Rating / Remove Input Container
                 const ratingContainerInClone = resultsClone.querySelector('#game-rating-container');
@@ -2027,10 +2115,8 @@ function loadSettings() {
                 // 1d: Get final inner HTML of the modified clone
                 const resultsContent = resultsClone.innerHTML;
 
-
-                // --- Step 2: Fetch and clean base CSS ---
-                /* ... Keep logic to fetch style.css, remove themes, @font-face, :root ... */
-                let baseCss = "/* Base styles error */";
+            // Step 2: Fetch and clean base CSS
+            let baseCss = "/* Base styles error */";
                 try {
                     console.log("OBS SAVE: Fetching style.css...");
                     const cssResponse = await fetch('style.css');
@@ -2051,10 +2137,8 @@ function loadSettings() {
                     } else { throw new Error(`Fetch failed: ${cssResponse.status}`); }
                 } catch (error) { console.error("OBS SAVE: Error fetching/cleaning style.css:", error); }
 
-
-                // --- Step 3: Get Computed Variable Values for styling ---
-                /* ... Keep logic to get computed vars into appliedVariablesString ... */
-                console.log("OBS SAVE: Getting computed styles from BODY...");
+            // Step 3: Get Computed Variable Values
+            console.log("OBS SAVE: Getting computed styles from BODY...");
                 let appliedVariablesString = "";
                 const varNames = [
                      '--bg-color', '--element-bg', '--text-color', '--text-muted',
@@ -2080,9 +2164,8 @@ function loadSettings() {
                 });
                 // --- activeFontValue is now set correctly ---
 
-
-                // --- Step 4: Determine required Font Definitions ---
-                /* ... Keep logic to generate fontDefinitionsHtml (local @font-face OR google <link>s) ... */
+            // Step 4: Determine required Font Definitions
+           /* ... Keep logic to generate fontDefinitionsHtml (local @font-face OR google <link>s) ... */
                  let fontDefinitionsHtml = ""; // This will hold the <link> or <style> tags
 
                 console.log(`OBS SAVE: Determining font definition for active font: ${activeFontValue}`);
@@ -2131,9 +2214,8 @@ function loadSettings() {
                     fontDefinitionsHtml = '<!-- System default font active -->';
                 }
 
-
-                // --- Step 5: Generate Metadata Tags (Specific Fields) ---
-                console.log("OBS SAVE: Generating metadata tags...");
+            // Step 5: Generate Metadata Tags
+            console.log("OBS SAVE: Generating metadata tags...");
                 let metaTags = [];
                 // Helper to create meta tag, handling quotes and nulls
                 const createMetaTag = (name, content) => {
@@ -2171,9 +2253,8 @@ function loadSettings() {
                 console.log("OBS SAVE: Generated metadata.");
                 // --- End Metadata ---
 
-
-                // --- Step 6: Construct the full HTML structure ---
-                const fullHtml = `<!DOCTYPE html>
+            // Step 6: Construct the full HTML structure
+            const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2191,8 +2272,8 @@ function loadSettings() {
 ${appliedVariablesString}
         }
         /* OBS Specific Overrides */
-        body { position: relative; padding: 0;}
-        #results { position: relative; border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        body { position: relative; margin: 0 auto;}
+        #results { position: relative; max-width: 850px; border: none !important; box-shadow: none !important; padding: 25px !important; margin: 0 auto !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
         #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
@@ -2208,25 +2289,18 @@ ${appliedVariablesString}
 </body>
 </html>`;
 
-                // --- Step 7: Create Blob and Download Link ---
-                const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
-                link.download = `${safeGameName}_GameGet.html`; // Use ID in filename
-                link.href = url;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                console.log(`Download triggered for ${link.download}. Includes specific metadata.`);
+            // Step 7: Generate Filename
+            const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
+            const filename = `${safeGameName}_${gameId}_Card.html`;
 
-            } catch (saveError) {
-                 console.error("Error during saveResultsHtml execution:", saveError);
-                 alert("An error occurred while generating the HTML file.");
-            }
-        }); // End requestAnimationFrame
-    } // End saveResultsHtml
+            console.log("Generate HTML: Success.");
+            return { filename, fullHtml }; // Return filename and content
+
+         } catch(error) {
+              console.error("Error during generateStaticHtml:", error);
+              return null; // Return null on error
+         }
+    } // End generateStaticHtml
     
 
     // Initial Setup

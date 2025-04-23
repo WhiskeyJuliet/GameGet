@@ -51,8 +51,7 @@ async function getTwitchAccessToken() {
 // --- Middleware ---
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
-
-      
+app.use(express.json({ limit: '5mb' })); // Middleware to parse JSON bodies (increased limit for HTML)
       
 // --- API Endpoint for Searching (returns list with year) ---
 app.get('/search', async (req, res) => {
@@ -266,7 +265,63 @@ app.get('/details/:gameId', async (req, res) => {
     }
 });
 
-// --- NEW: API Endpoint to Scan Collection Folder --- // <<<--- ADDED START
+// --- API Endpoint to Save HTML to Collection ---
+app.post('/api/saveToCollection', async (req, res) => {
+    const { filename, htmlContent } = req.body;
+
+    console.log(`API Save: Received filename: "${filename}"`); // Log received name
+
+    if (!filename || typeof filename !== 'string' || !htmlContent || typeof htmlContent !== 'string') {
+        return res.status(400).json({ error: 'Invalid filename or htmlContent provided.' });
+    }
+
+    // --- Refined Sanitization & Logging ---
+    let sanitizedFilename = filename;
+
+    // 1. Remove path traversal attempts FIRST
+    sanitizedFilename = sanitizedFilename.replace(/\.\.\//g, '').replace(/\.\.\\/g, ''); // Remove ../ and ..\ explicitly
+    console.log(`API Save: After traversal removal: "${sanitizedFilename}"`);
+
+    // 2. Extract basename AFTER initial cleanup
+    sanitizedFilename = path.basename(sanitizedFilename);
+    console.log(`API Save: After basename: "${sanitizedFilename}"`);
+
+    // 3. Replace remaining invalid characters (keep the dot for extension)
+    // Allow letters, numbers, underscore, hyphen, dot. Replace others with underscore.
+    sanitizedFilename = sanitizedFilename.replace(/[^a-z0-9_\-\.]/gi, '_');
+    console.log(`API Save: After char replace: "${sanitizedFilename}"`);
+
+    // 4. Replace multiple consecutive underscores/hyphens with single ones (optional cleanup)
+    sanitizedFilename = sanitizedFilename.replace(/[_]+/g, '_').replace(/[-]+/g, '-');
+    console.log(`API Save: After consecutive char cleanup: "${sanitizedFilename}"`);
+
+
+    // 5. Check extension AFTER all sanitization
+    if (!sanitizedFilename.toLowerCase().endsWith('.html')) {
+         console.error(`API Save: Sanitized filename "${sanitizedFilename}" does not end with .html`);
+         return res.status(400).json({ error: 'Invalid filename extension after sanitization.' });
+    }
+    // --- End Sanitization ---
+
+    const saveDir = path.join(__dirname, 'public', 'results');
+    const fullPath = path.join(saveDir, sanitizedFilename);
+
+    console.log(`API Save: Final path: ${fullPath}`);
+
+    try {
+        await fs.mkdir(saveDir, { recursive: true });
+        await fs.writeFile(fullPath, htmlContent, 'utf-8');
+        console.log(`API Save: Successfully saved ${sanitizedFilename}`);
+        res.status(201).json({ message: 'File saved successfully.' });
+
+    } catch (error) {
+        console.error(`API Save: Error saving file "${sanitizedFilename}":`, error);
+        res.status(500).json({ error: 'Failed to save file.' });
+    }
+});
+// --- End Save to Collection Endpoint ---
+
+// --- API Endpoint to Scan Collection Folder ---
 app.get('/api/getCollection', async (req, res) => {
     const collectionPath = path.join(__dirname, 'public', 'results'); // Path to check
     console.log(`API: Scanning collection folder: ${collectionPath}`);
