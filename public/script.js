@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
 	
-	// --- NEW: Default Theme Font Mapping ---
+	// --- Default Theme Font Mapping ---
     const defaultThemeFonts = {
         'light': "'Monda', sans-serif",
         'dark': "'Monda', sans-serif",
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	let currentPlatformsOrder = []; // Store current platform order
 	let selectedPlatformName = null; // Global state for selected platform name
 	let gameCardCollection = []; // Array holds metadata objects {id, name, developer, ...}
+	let activeCardFilename = null; // Track active card for OBS output
     // let userCardNumbering = {}; // Add later if implementing numbering
 
 
@@ -1336,7 +1337,9 @@ function loadSettings() {
             }
 
             gameCardCollection = collectionData; // Update global collection
-            console.log(`Collection loaded: ${gameCardCollection.length} cards found.`);
+			console.log(`Collection loaded: ${gameCardCollection.length} cards found.`);
+			activeCardFilename = localStorage.getItem('activeCardFilename'); // <<< Try to load active card
+			console.log(`Collection loaded. Active card on load: ${activeCardFilename}`);
             collectionStatus.textContent = `Status: Loaded ${gameCardCollection.length} cards.`;
 
 			// Populate Filter Dropdowns
@@ -1547,10 +1550,13 @@ function loadSettings() {
              releaseElement.textContent = meta.releaseDate || 'N/A';
              cardElement.appendChild(releaseElement);
 
-             if (meta.userRatingValue !== null) {
+             // --- Conditionally add Rating Element ---
+             // Check if a valid rating value exists AND the style isn't 'off'
+             if (meta.userRatingValue !== null && meta.userRatingValue !== undefined && meta.userRatingStyle !== 'off') {
                 const ratingElement = document.createElement('p');
-                ratingElement.innerHTML = getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue);
-                cardElement.appendChild(ratingElement);
+                // Use getStaticRatingHtml which returns an HTML string
+                ratingElement.innerHTML = getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue); // Pass style and value
+                cardElement.appendChild(ratingElement); // Append only if rating exists
              }
 
              if (meta.userPlatform) {
@@ -1568,8 +1574,42 @@ function loadSettings() {
                 playedOnElement.appendChild(logoImg);
                 cardElement.appendChild(playedOnElement);
              }
-             // --- End Appending Details ---
+              // --- Create "Set Active for OBS" Button ---
+             if (meta.sourceFile) { // Only if we have a file to copy
+                const setActiveButton = document.createElement('button');
+                setActiveButton.type = 'button';
+                setActiveButton.classList.add('set-active-button');
+                setActiveButton.title = 'Set this card as the current one for OBS';
 
+                const btnIcon = document.createElement('img');
+                // Set initial icon based on whether this card is the active one
+                btnIcon.src = (meta.sourceFile === activeCardFilename)
+                               ? 'images/twitch_logo.png'
+                               : 'images/twitch_logo_shadow.png';
+                btnIcon.alt = 'Set Active';
+                // Size controlled by CSS
+                setActiveButton.appendChild(btnIcon);
+
+                const btnText = document.createElement('span');
+                btnText.textContent = (meta.sourceFile === activeCardFilename) ? 'Active' : 'Set Active';
+                setActiveButton.appendChild(btnText);
+
+                // Add click listener to call backend
+                setActiveButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click if needed
+                    setActiveCard(meta.sourceFile, cardElement, setActiveButton); // Pass filename and elements
+                });
+
+                cardElement.appendChild(setActiveButton); // Append button to card
+
+                // Add active class to card element if it's the current one
+                if (meta.sourceFile === activeCardFilename) {
+                    cardElement.classList.add('active-card');
+                }
+             }
+             // --- End "Set Active for OBS" Button ---
+
+			 
              collectionGrid.appendChild(cardElement); // Append the fully constructed card
         });
          console.log(`Rendered ${sortedData.length} cards.`);
@@ -1591,6 +1631,72 @@ function loadSettings() {
         setTimeout(() => { lightboxIframe.src = 'about:blank'; }, 300); // Delay slightly for fade-out
     }
     // --- End Lightbox ---
+
+	// --- NEW: Function to Set Active Card ---
+    async function setActiveCard(filename, clickedCardElement, clickedButtonElement) {
+        console.log(`Setting active card to: ${filename}`);
+
+        // Provide visual feedback
+        const originalText = clickedButtonElement.querySelector('span').textContent;
+        const icon = clickedButtonElement.querySelector('img');
+        clickedButtonElement.disabled = true;
+        if (icon) icon.src = 'images/loading_spinner.gif'; // Optional: use a loading spinner
+        clickedButtonElement.querySelector('span').textContent = 'Setting...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/setCurrentCard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceFilename: filename })
+            });
+
+            if (response.ok) {
+                console.log(`Successfully set active card to ${filename}`);
+                const oldActiveFilename = activeCardFilename; // Store previous active name
+                activeCardFilename = filename; // Update global state
+                localStorage.setItem('activeCardFilename', activeCardFilename); // Save state
+
+                // Update UI for ALL cards
+                const allCards = collectionGrid.querySelectorAll('.game-card');
+                allCards.forEach(card => {
+                    const cardFilename = gameCardCollection.find(gc => gc.id == card.dataset.gameId)?.sourceFile; // Find filename from dataset id
+                    const button = card.querySelector('.set-active-button');
+                    const buttonIcon = button?.querySelector('img');
+                    const buttonText = button?.querySelector('span');
+
+                    if (cardFilename === activeCardFilename) {
+                        // This is the newly active card
+                        card.classList.add('active-card');
+                        if (button) {
+                             if (buttonIcon) buttonIcon.src = 'images/twitch_logo.png';
+                             if (buttonText) buttonText.textContent = 'Active';
+                        }
+                    } else {
+                         // This is not the active card (or was the old one)
+                        card.classList.remove('active-card');
+                        if (button) {
+                             if (buttonIcon) buttonIcon.src = 'images/twitch_logo_shadow.png';
+                             if (buttonText) buttonText.textContent = 'Set Active';
+                        }
+                    }
+                    if(button) button.disabled = false; // Re-enable all buttons
+                });
+
+            } else {
+                 const errorData = await response.json().catch(() => ({error: `Server error ${response.status}`}));
+                 throw new Error(errorData.error || `Failed to set active card (status ${response.status})`);
+            }
+
+        } catch (error) {
+            console.error("Error setting active card:", error);
+            alert(`Failed to set active card: ${error.message}`);
+            // Reset button state on error
+            if (icon) icon.src = (filename === activeCardFilename) ? 'images/twitch_logo.png' : 'images/twitch_logo_shadow.png';
+            clickedButtonElement.querySelector('span').textContent = originalText;
+            clickedButtonElement.disabled = false;
+        }
+    }
+    // --- End Set Active Card ---
 
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
@@ -2379,13 +2485,13 @@ ${appliedVariablesString}
     loadLocalFonts().then(() => { // Load local fonts first
          console.log("Local fonts loaded (or attempted). Now loading other settings...");
          loadSettings(); // THEN load other settings (which might select a dynamic font)
+		 // Load active card filename from storage on initial load
+		 activeCardFilename = localStorage.getItem('activeCardFilename');
+		 console.log(`Initial active card file: ${activeCardFilename}`);
          console.log("Initial setup complete.");
     }).catch(err => {
          console.error("Error during initial font load:", err);
          // Still try to load other settings even if fonts fail
-		 
-    loadSettings(); // Load saved settings on page load
-	console.log("Initial setup complete.");
 	});
 
 

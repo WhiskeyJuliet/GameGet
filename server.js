@@ -401,6 +401,59 @@ app.get('/api/getCollection', async (req, res) => {
     }
 });
 
+// --- API Endpoint to Copy a Card to Current ---
+app.post('/api/setCurrentCard', async (req, res) => {
+    const { sourceFilename } = req.body;
+
+    // Basic validation
+    if (!sourceFilename || typeof sourceFilename !== 'string') {
+        return res.status(400).json({ error: 'Invalid sourceFilename provided.' });
+    }
+
+    // --- CRITICAL: Sanitize sourceFilename ---
+    // 1. Prevent directory traversal (remove ../ / \)
+    let safeBaseName = sourceFilename.replace(/\.\.[\/\\]/g, ''); // Remove ../ and ..\
+    // 2. Ensure it's just the filename, no extra paths
+    safeBaseName = path.basename(safeBaseName);
+    // 3. Check it ends with .html and contains expected pattern maybe?
+    if (!safeBaseName.toLowerCase().endsWith('.html') || !safeBaseName.includes('_Card')) {
+         console.error(`API SetCurrent: Invalid source filename format: "${safeBaseName}"`);
+         return res.status(400).json({ error: 'Invalid source filename format.' });
+    }
+    const sanitizedSourceFilename = safeBaseName; // Use the cleaned basename
+    // --- End Sanitization ---
+
+    const resultsDir = path.join(__dirname, 'public', 'results');
+    const twitchDir = path.join(__dirname, 'public', 'twitch');
+    const sourcePath = path.join(resultsDir, sanitizedSourceFilename);
+    const destPath = path.join(twitchDir, 'Current_GameGet.html'); // Fixed destination name
+
+    console.log(`API SetCurrent: Attempting to copy "${sourcePath}" to "${destPath}"`);
+
+    try {
+        // Check if source file exists first
+        await fs.access(sourcePath, fs.constants.F_OK); // Check if source exists
+
+        // Ensure destination directory exists
+        await fs.mkdir(twitchDir, { recursive: true });
+
+        // Copy the file (overwrites destination)
+        await fs.copyFile(sourcePath, destPath);
+
+        console.log(`API SetCurrent: Successfully copied ${sanitizedSourceFilename} to Current_GameGet.html`);
+        res.status(200).json({ message: 'Current card updated successfully.' });
+
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+             console.error(`API SetCurrent: Source file not found: "${sourcePath}"`);
+             res.status(404).json({ error: `Source file not found: ${sanitizedSourceFilename}` });
+        } else {
+             console.error(`API SetCurrent: Error copying file:`, error);
+             res.status(500).json({ error: 'Failed to update current card file on server.' });
+        }
+    }
+});
+
 
 // Other endpoints (/search, catch-all, etc.) remain unchanged.
 
