@@ -1549,29 +1549,37 @@ transform: scale(0.98);
     font-size: inherit; /* Make small tag inherit link size */
 }
 
-/* --- NEW: Styles for Set Active Button --- */
-.set-active-button {
-    display: inline-flex; /* Align icon and text */
+.card-actions {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: center; /* Center content */
-    padding: 5px 8px; /* Smaller padding */
-    border: 0px solid var(--border-color);
+    gap: 10px;
+    position: relative;
+}
+
+/* --- Styles for Set Active Button --- */
+.set-active-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px; /* Adjusted padding */
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    background-color: var(--accent-color); /* Default background */
+    background-color: var(--element-bg);
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
-    margin-top: auto; /* Push to bottom */
-    align-self: center; /* Center horizontally */
-    margin-bottom: 5px; /* Space at bottom */
-    width: auto; /* Allow button to size to content */
-    min-width: 100px; /* Give some minimum width */
-    color: var(--text-muted); /* Default text color */
+    /* flex-grow: 1; */ /* Remove if only one button */
+    min-width: 100px; /* Adjust min-width */
+    color: var(--text-muted);
 	font-family: inherit;
 }
 
 .set-active-button img {
-    width: 16px; /* Icon size */
-    height: 16px;
+    width: 24px; /* Icon size */
+    height: 24px;
     margin-right: 5px;
     object-fit: contain;
 }
@@ -1602,6 +1610,49 @@ transform: scale(0.98);
     background-color: var(--accent-darker);
     color: var(--text-color);
 }
+
+/* Tooltip Styles */
+.tooltip-feedback {
+    position: absolute;
+    bottom: calc(80% + 5px); /* Position directly above the container + 5px gap */
+    left: 50%;               /* Center horizontally */
+    transform: translateX(-50%); /* Fine-tune centering */
+    background-color: #333;
+    color: #fff;
+    padding: 4px 8px; /* Slightly smaller padding */
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s;
+    z-index: 10;
+    pointer-events: none;
+}
+.tooltip-feedback.show {
+    opacity: 0.9;
+    visibility: visible;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0s;
+}
+/* Optional Tooltip Arrow (Adjust positioning) */
+.tooltip-feedback::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+.tooltip-feedback.error { /* Keep error styling */
+    background-color: var(--error-color);
+}
+.tooltip-feedback.error::after { /* Match arrow color */
+     border-top-color: var(--error-color);
+}
+
+
 
 
 /* === NEW: Footer Area === */

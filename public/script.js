@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
+	const OBS_URL = `${window.location.origin}/twitch/Current_GameGet.html`;
 	
 	// --- Default Theme Font Mapping ---
     const defaultThemeFonts = {
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	let selectedPlatformName = null; // Global state for selected platform name
 	let gameCardCollection = []; // Array holds metadata objects {id, name, developer, ...}
 	let activeCardFilename = null; // Track active card for OBS output
+    let tooltipTimeout = null;
     // let userCardNumbering = {}; // Add later if implementing numbering
 
 
@@ -1574,7 +1576,12 @@ function loadSettings() {
                 playedOnElement.appendChild(logoImg);
                 cardElement.appendChild(playedOnElement);
              }
-              // --- Create "Set Active for OBS" Button ---
+			 
+			 // --- Create Action Button Container ---
+             const actionsContainer = document.createElement('div');
+             actionsContainer.classList.add('card-actions');
+			 
+             // --- Create "Set Active for OBS" Button ---
              if (meta.sourceFile) { // Only if we have a file to copy
                 const setActiveButton = document.createElement('button');
                 setActiveButton.type = 'button';
@@ -1584,8 +1591,8 @@ function loadSettings() {
                 const btnIcon = document.createElement('img');
                 // Set initial icon based on whether this card is the active one
                 btnIcon.src = (meta.sourceFile === activeCardFilename)
-                               ? 'images/twitch_logo.png'
-                               : 'images/twitch_logo_shadow.png';
+                               ? 'images/obs_logo.png'
+                               : 'images/obs_logo_shadow.png';
                 btnIcon.alt = 'Set Active';
                 // Size controlled by CSS
                 setActiveButton.appendChild(btnIcon);
@@ -1597,23 +1604,98 @@ function loadSettings() {
                 // Add click listener to call backend
                 setActiveButton.addEventListener('click', (e) => {
                     e.stopPropagation(); // Prevent card click if needed
-                    setActiveCard(meta.sourceFile, cardElement, setActiveButton); // Pass filename and elements
+                    setActiveCardAndCopyUrl(meta.sourceFile, cardElement, setActiveButton); // Call function that handles BOTH setting active and copying
                 });
-
-                cardElement.appendChild(setActiveButton); // Append button to card
+				actionsContainer.appendChild(setActiveButton); // Add button to actions div
+				}
+				
+                cardElement.appendChild(actionsContainer); // Append actions container
+                collectionGrid.appendChild(cardElement);
 
                 // Add active class to card element if it's the current one
-                if (meta.sourceFile === activeCardFilename) {
-                    cardElement.classList.add('active-card');
-                }
-             }
-             // --- End "Set Active for OBS" Button ---
+                if (meta.sourceFile === activeCardFilename) cardElement.classList.add('active-card');
+             
+				// --- End "Set Active for OBS" Button ---
 
-			 
-             collectionGrid.appendChild(cardElement); // Append the fully constructed card
         });
          console.log(`Rendered ${sortedData.length} cards.`);
     } // End renderCollectionGrid
+	
+	 // --- Sets Active Card AND Copies URL ---
+    async function setActiveCardAndCopyUrl(filename, clickedCardElement, clickedButtonElement) {
+        console.log(`Setting active card to: ${filename} and copying URL...`);
+
+        const actionsContainer = clickedButtonElement.closest('.card-actions'); // Find container for tooltip
+        const originalText = clickedButtonElement.querySelector('span').textContent;
+        const icon = clickedButtonElement.querySelector('img');
+        clickedButtonElement.disabled = true;
+        //if (icon) icon.src = 'images/loading_spinner.gif'; // Optional: loading spinner
+        clickedButtonElement.querySelector('span').textContent = 'Working...';
+
+        let setActiveSuccess = false;
+        try {
+            // --- Action 1: Set Active Card on Backend ---
+            const response = await fetch(`${API_BASE_URL}/api/setCurrentCard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceFilename: filename })
+            });
+
+            if (!response.ok) {
+                 const errorData = await response.json().catch(()=>({error: `Server error ${response.status}`}));
+                 throw new Error(errorData.error || `Failed to set active card (status ${response.status})`);
+            }
+
+            console.log(`Successfully set active card file to ${filename}`);
+            setActiveSuccess = true; // Mark backend success
+
+            // --- Action 2: Copy URL to Clipboard ---
+            await navigator.clipboard.writeText(OBS_URL);
+            console.log('OBS URL copied to clipboard:', OBS_URL);
+
+            // --- Action 3: Update UI and State ---
+            const oldActiveFilename = activeCardFilename;
+            activeCardFilename = filename; // Update global state
+            localStorage.setItem('activeCardFilename', activeCardFilename); // Save state
+
+            // Update ALL card buttons/classes
+            const allCards = collectionGrid.querySelectorAll('.game-card');
+            allCards.forEach(card => {
+                const cardFilename = gameCardCollection.find(gc => gc.id == card.dataset.gameId)?.sourceFile;
+                const button = card.querySelector('.set-active-button');
+                const buttonIcon = button?.querySelector('img');
+                const buttonText = button?.querySelector('span');
+
+                if (cardFilename === activeCardFilename) { // The one just clicked
+                    card.classList.add('active-card');
+                    if (button) {
+                         if (buttonIcon) buttonIcon.src = 'images/obs_logo.png';
+                         if (buttonText) buttonText.textContent = 'Active';
+                         button.disabled = false; // Re-enable
+                    }
+                } else { // Other cards
+                    card.classList.remove('active-card');
+                    if (button) {
+                         if (buttonIcon) buttonIcon.src = 'images/obs_logo_shadow.png';
+                         if (buttonText) buttonText.textContent = 'Set Active';
+                         button.disabled = false; // Re-enable
+                    }
+                }
+            });
+
+            // Show success tooltip near the button container
+            showTooltip(actionsContainer, 'Set Active & URL Copied!');
+
+        } catch (error) {
+            console.error("Error setting active card or copying URL:", error);
+            // Show error tooltip near the button container
+            showTooltip(actionsContainer, `Error: ${error.message}`, true);
+            // Reset button state only if backend failed, keep trying to copy maybe?
+             if (icon) icon.src = (filename === activeCardFilename) ? 'images/obs_logo.png' : 'images/obs_logo_shadow.png'; // Restore icon based on *potentially* updated state
+             clickedButtonElement.querySelector('span').textContent = (filename === activeCardFilename) ? 'Active' : 'Set Active'; // Restore text
+             clickedButtonElement.disabled = false; // Re-enable on error
+        }
+    } // End setActiveCardAndCopyUrl
 
 	// --- Lightbox Control Functions ---
     function showLightbox(url) {
@@ -1632,7 +1714,7 @@ function loadSettings() {
     }
     // --- End Lightbox ---
 
-	// --- NEW: Function to Set Active Card ---
+	// --- Function to Set Active Card ---
     async function setActiveCard(filename, clickedCardElement, clickedButtonElement) {
         console.log(`Setting active card to: ${filename}`);
 
@@ -1668,14 +1750,14 @@ function loadSettings() {
                         // This is the newly active card
                         card.classList.add('active-card');
                         if (button) {
-                             if (buttonIcon) buttonIcon.src = 'images/twitch_logo.png';
+                             if (buttonIcon) buttonIcon.src = 'images/obs_logo.png';
                              if (buttonText) buttonText.textContent = 'Active';
                         }
                     } else {
                          // This is not the active card (or was the old one)
                         card.classList.remove('active-card');
                         if (button) {
-                             if (buttonIcon) buttonIcon.src = 'images/twitch_logo_shadow.png';
+                             if (buttonIcon) buttonIcon.src = 'images/obs_logo_shadow.png';
                              if (buttonText) buttonText.textContent = 'Set Active';
                         }
                     }
@@ -1691,12 +1773,90 @@ function loadSettings() {
             console.error("Error setting active card:", error);
             alert(`Failed to set active card: ${error.message}`);
             // Reset button state on error
-            if (icon) icon.src = (filename === activeCardFilename) ? 'images/twitch_logo.png' : 'images/twitch_logo_shadow.png';
+            if (icon) icon.src = (filename === activeCardFilename) ? 'images/obs_logo.png' : 'images/obs_logo_shadow.png';
             clickedButtonElement.querySelector('span').textContent = originalText;
             clickedButtonElement.disabled = false;
         }
     }
     // --- End Set Active Card ---
+
+	// --- Copy URL and Tooltip Functions ---
+    /**
+     * Copies the OBS URL to the clipboard and shows feedback.
+     * @param {HTMLElement} buttonContainer - The container (.card-actions) of the clicked button.
+     */
+    async function copyObsUrlToClipboard() { // Now less likely to be called directly
+        try {
+            await navigator.clipboard.writeText(OBS_URL);
+            console.log('OBS URL copied.');
+            return true; // Indicate success
+        } catch (err) {
+            console.error('Failed to copy OBS URL: ', err);
+            return false; // Indicate failure
+        }
+    }
+
+    /**
+     * Shows a tooltip message relative to a target element container.
+     * Manages its own removal timeout.
+     * @param {HTMLElement} targetContainer - The element container (.card-actions) to append to.
+     * @param {string} message - Text to display.
+     * @param {boolean} isError - Optional flag for error styling.
+     */
+    function showTooltip(targetContainer, message, isError = false) {
+        if (!targetContainer) {
+            console.error("showTooltip: Target container is invalid.");
+            return;
+        }
+
+        // --- Clear Existing Tooltip/Timeout for THIS container ---
+        const existingTooltip = targetContainer.querySelector('.tooltip-feedback');
+        if (existingTooltip) {
+            // Check if there's an existing timeout stored on the element
+            const existingTimeoutId = existingTooltip._tooltipTimeoutId; // Use custom property
+            if (existingTimeoutId) {
+                clearTimeout(existingTimeoutId);
+                console.log("Cleared previous tooltip timeout for this container.");
+            }
+            existingTooltip.remove(); // Remove old tooltip immediately
+        }
+        // --- End Clear ---
+
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.textContent = message;
+        tooltip.classList.add('tooltip-feedback');
+        if (isError) tooltip.classList.add('error');
+
+        // Append tooltip INSIDE the target container
+        targetContainer.appendChild(tooltip);
+
+        // Show tooltip (slight delay ensures it's appended before class change)
+        requestAnimationFrame(() => {
+            tooltip.classList.add('show');
+        });
+
+        // Set timeout to hide AND remove tooltip, store ID on element
+        const timeoutId = setTimeout(() => {
+            // Check if tooltip still exists in the DOM before trying to remove class/element
+            if (tooltip.parentNode) {
+                tooltip.classList.remove('show');
+                // Remove from DOM after transition
+                tooltip.addEventListener('transitionend', () => {
+                     if (tooltip.parentNode) tooltip.remove();
+                }, { once: true });
+            }
+            // Clear the stored timeout ID from the element itself after execution
+             delete tooltip._tooltipTimeoutId;
+
+        }, 1500); // Tooltip visible for 1.5 seconds
+
+        // Store the timeout ID directly on the tooltip element
+        tooltip._tooltipTimeoutId = timeoutId;
+
+    } 
+    // --- End of Copy URL and Tooltip Functions ---	
 
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
