@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
 	const ratingStyleGroup = document.getElementById('rating-style-group');
 	
+	// Lightbox Elements
+	const lightbox = document.getElementById('card-lightbox');
+    const lightboxOverlay = lightbox.querySelector('.lightbox-overlay');
+    const lightboxContent = lightbox.querySelector('.lightbox-content');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const lightboxIframe = document.getElementById('lightbox-iframe');
+	
 	// Collection Elements
 	const tabsContainer = document.querySelector('.tabs-container');
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -76,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
-        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform) { 
+        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform || !lightbox || !lightboxOverlay || !lightboxContent || !lightboxClose || !lightboxIframe) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
         return;
@@ -202,6 +209,18 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     collectionFilterPlatform.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
 
     console.log("Collection filter/sort listeners attached.");
+	
+	// --- Lightbox Listeners ---
+    lightboxClose.addEventListener('click', hideLightbox);
+    lightboxOverlay.addEventListener('click', hideLightbox);
+    // Optional: Close lightbox on Escape key press
+    document.addEventListener('keydown', (e) => {
+         if (e.key === 'Escape' && !lightbox.classList.contains('lightbox-hidden')) {
+             hideLightbox();
+         }
+    });
+    console.log("Lightbox listeners attached.");
+    // --- End Lightbox ---
 	
 	// End of Event Listeners
     console.log("Finished attaching event listeners.");
@@ -1463,6 +1482,7 @@ function loadSettings() {
                  }
 				 // Developer Sort
                  case 'developer-asc': return (aMeta.developer || '').localeCompare(bMeta.developer || '');
+				 case 'developer-desc': return (bMeta.developer || '').localeCompare(aMeta.developer || ''); // Reverse comparison
                  // Add user number sorting later
                  default: return 0;
              }
@@ -1475,50 +1495,102 @@ function loadSettings() {
               return;
          }
 
-        sortedData.forEach(meta => { // Iterate through sorted & filtered metadata
+        sortedData.forEach(meta => {
              const cardElement = document.createElement('div');
              cardElement.classList.add('game-card');
              cardElement.dataset.gameId = meta.id;
 
-             // Use correct relative path for cover (../images/...)
-             const coverPath = meta.coverUrl ? meta.coverUrl.replace('t_cover_big', 't_cover_small') : ''; // Get small cover URL
-             // Note: saveResultsHtml adjusted paths to ../images already, so use that directly
-             // For display *here*, we might need paths relative to index.html? No, let's assume paths in meta are correct for this view.
-             // If paths were saved as ../images, we need to remove ../ for display here. Let's adjust saveResultsHtml metadata saving.
-             // *** Correction Needed: Save absolute-like paths (/images/...) in metadata ***
-
-             // --- Let's assume metadata.coverUrl is saved as the FULL URL from IGDB ---
-             // Use higher quality cover image instead of lower (t_cover_small)
-             // const displayCoverUrl = meta.coverUrl ? meta.coverUrl.replace('t_cover_big', 't_cover_small') : '';
-			 const displayCoverUrl = meta.coverUrl || ''; // Use the URL directly from metadata
-
-			 // --- Update Card Rendering for Played On Logo ---
-             let playedOnHtml = '';
-             if (meta.userPlatform) {
-                 const logoPath = getLogoPathForPlatform(meta.userPlatform); // Get logo for saved platform
-                 playedOnHtml = `
-                    <p class="played-on-section">
-                        <small>Played on:</small>
-                        <img src="${logoPath}" alt="${meta.userPlatform}" title="${meta.userPlatform}" onerror="this.style.display='none'">
-                    </p>`;
+             // --- Create Cover Image (or Placeholder) ---
+             let coverElement;
+             const displayCoverUrl = meta.coverUrl || '';
+             if (displayCoverUrl) {
+                 coverElement = document.createElement('img');
+                 coverElement.src = displayCoverUrl;
+                 coverElement.alt = `${meta.name || ''} Cover`;
+                 coverElement.classList.add('cover');
+                 coverElement.loading = 'lazy';
+                 coverElement.onerror = () => { coverElement.style.display='none'; };
+             } else {
+                 coverElement = document.createElement('div');
+                 coverElement.classList.add('cover-placeholder');
+                 coverElement.textContent = 'No Cover';
              }
-             // --- End Played On Logo ---
-			 
-             cardElement.innerHTML = `
-                 ${displayCoverUrl ? `<img src="${displayCoverUrl}" alt="${meta.name || ''} Cover" class="cover" loading="lazy" onerror="this.style.display='none'">` : '<div class="cover-placeholder">No Cover</div>'}
-                 <h4>${meta.name || 'No Title'}</h4>
-                 <p>${meta.developer || 'N/A'}</p>
-                 <p>${meta.releaseDate || 'N/A'}</p>
-                 ${meta.userRatingValue !== null ? `<p>${getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue)}</p>` : ''}
-				 ${playedOnHtml}
-				 <a href="results/${encodeURIComponent(meta.sourceFile)}" target="_blank" title="Open Saved HTML"><small>🔗️ Open Saved HTML</small></a>
-		   `;
-             collectionGrid.appendChild(cardElement);
+
+             // --- Add Click Listener to Cover ---
+             if (meta.sourceFile) { // Check if sourceFile exists
+                 coverElement.style.cursor = 'pointer';
+                 coverElement.title = `View Card: ${meta.name}`;
+                 coverElement.addEventListener('click', (e) => {
+                     e.preventDefault();
+                     // Path relative to public/ as served by express.static
+                     const filePath = `results/${meta.sourceFile}`; // Construct path using sourceFile
+                     console.log(`Showing lightbox for: ${filePath}`);
+                     showLightbox(filePath); // Call lightbox function
+                 });
+             } else {
+                 console.warn(`Card for "${meta.name}" missing sourceFile metadata, cannot add lightbox link.`);
+             }
+			 // --- End Click Listener ---
+             cardElement.appendChild(coverElement); // Append cover first
+
+
+             // --- Add other card details using createElement/appendChild ---
+             const titleElement = document.createElement('h4');
+             titleElement.textContent = meta.name || 'No Title';
+             cardElement.appendChild(titleElement);
+
+             const devElement = document.createElement('p');
+             devElement.textContent = meta.developer || 'N/A';
+             cardElement.appendChild(devElement);
+
+             const releaseElement = document.createElement('p');
+             releaseElement.textContent = meta.releaseDate || 'N/A';
+             cardElement.appendChild(releaseElement);
+
+             if (meta.userRatingValue !== null) {
+                const ratingElement = document.createElement('p');
+                ratingElement.innerHTML = getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue);
+                cardElement.appendChild(ratingElement);
+             }
+
+             if (meta.userPlatform) {
+                const playedOnElement = document.createElement('p');
+                playedOnElement.classList.add('played-on-section');
+                const label = document.createElement('small');
+                label.textContent = 'Played:';
+                playedOnElement.appendChild(label);
+                const logoPath = getLogoPathForPlatform(meta.userPlatform);
+                const logoImg = document.createElement('img');
+                logoImg.src = logoPath;
+                logoImg.alt = meta.userPlatform;
+                logoImg.title = meta.userPlatform;
+                logoImg.onerror = () => { logoImg.style.display='none'; };
+                playedOnElement.appendChild(logoImg);
+                cardElement.appendChild(playedOnElement);
+             }
+             // --- End Appending Details ---
+
+             collectionGrid.appendChild(cardElement); // Append the fully constructed card
         });
          console.log(`Rendered ${sortedData.length} cards.`);
-
     } // End renderCollectionGrid
 
+	// --- Lightbox Control Functions ---
+    function showLightbox(url) {
+        if (!url) return;
+        // Set iframe src BEFORE making lightbox visible
+        lightboxIframe.src = url;
+        lightbox.classList.remove('lightbox-hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function hideLightbox() {
+        lightbox.classList.add('lightbox-hidden');
+        document.body.style.overflow = ''; // Restore background scrolling
+        // Clear iframe src to stop potential loading/scripts in background
+        setTimeout(() => { lightboxIframe.src = 'about:blank'; }, 300); // Delay slightly for fade-out
+    }
+    // --- End Lightbox ---
 
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
@@ -2272,7 +2344,7 @@ function loadSettings() {
 ${appliedVariablesString}
         }
         /* OBS Specific Overrides */
-        body { position: relative; margin: 0 auto;}
+        body { position: relative; margin: 0 auto; background-color: transparent !important;}
         #results { position: relative; max-width: 850px; border: none !important; box-shadow: none !important; padding: 25px !important; margin: 0 auto !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }

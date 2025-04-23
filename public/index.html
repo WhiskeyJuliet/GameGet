@@ -277,6 +277,7 @@
                         <option value="rating-desc">My Rating (High-Low)</option>
                         <option value="rating-asc">My Rating (Low-High)</option>
                         <option value="developer-asc">Developer (A-Z)</option>
+						<option value="developer-desc">Developer (Z-A)</option>
                         <!-- <option value="userno-asc">Sort: User No. (Asc)</option> -->
                     </select>
                 </div>
@@ -310,8 +311,20 @@
 			<a href="https://store.epicgames.com/en-US/" target="_blank" rel="noopener noreferrer"><img src="images/epic.png"></a>
 			<a href="https://itch.io/" target="_blank" rel="noopener noreferrer"><img src="images/itch.png"></a>
 		</p>
+				
     </div>
     <!-- End Footer Area -->
+	
+	<!-- Lightbox Structure -->
+    <div id="card-lightbox" class="lightbox-hidden">
+        <div class="lightbox-overlay"></div> <!-- Background overlay -->
+        <div class="lightbox-content">
+            <button id="lightbox-close" aria-label="Close Lightbox" title="Close">×</button>
+            <iframe id="lightbox-iframe" src="about:blank" frameborder="0"></iframe> <!-- Iframe to load content -->
+        </div>
+    </div>
+    <!-- END Lightbox Structure -->
+	
     <script src="script.js"></script>
 </body>
 </html>
