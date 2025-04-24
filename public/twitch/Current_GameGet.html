@@ -3,23 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameGet Card - Desert Strike: Return to the Gulf</title> <!-- Changed title -->
+    <title>GameGet Card - BioShock</title> <!-- Changed title -->
     <!-- Embed Metadata -->
-    <meta name="gameget:id" content="6798">
-    <meta name="gameget:name" content="Desert Strike: Return to the Gulf">
-    <meta name="gameget:developer" content="Electronic Arts">
-    <meta name="gameget:releaseDate" content="1 February 1992">
-    <meta name="gameget:releaseTimestamp" content="696902400">
-    <meta name="gameget:platforms" content="Super Nintendo Entertainment System,Sega Mega Drive/Genesis,DOS,Amiga,Game Boy Advance">
-    <meta name="gameget:coverUrl" content="https://images.igdb.com/igdb/image/upload/t_cover_big/co2jmx.jpg">
+    <meta name="gameget:id" content="20">
+    <meta name="gameget:name" content="BioShock">
+    <meta name="gameget:developer" content="2K Boston">
+    <meta name="gameget:releaseDate" content="21 August 2007">
+    <meta name="gameget:releaseTimestamp" content="1187654400">
+    <meta name="gameget:platforms" content="PC (Microsoft Windows),Mac,Xbox 360">
+    <meta name="gameget:coverUrl" content="https://images.igdb.com/igdb/image/upload/t_cover_big/co2mli.jpg">
     <meta name="gameget:userRatingValue" content="5">
     <meta name="gameget:userRatingStyle" content="stars">
-    <meta name="gameget:storeLinks" content="[]">
-    <meta name="gameget:userPlatform" content="DOS">
+    <meta name="gameget:storeLinks" content="[{"name":"Steam","url":"https://store.steampowered.com/app/7670"},{"name":"GOG","url":"https://www.gog.com/game/bioshock_remastered"}]">
+    <meta name="gameget:userPlatform" content="PC (Microsoft Windows)">
     <!-- Embed Font Definition -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&amp;family=Open+Sans:wght@400;600&amp;family=Roboto:wght@400;500;700&amp;family=Source+Sans+3:wght@400;600&amp;family=Tiny5&amp;display=swap" rel="stylesheet">
+    <style id="local-font-face">@font-face { font-family: 'pxSans'; src: url('../fonts/pxSans.woff') format('woff'); }</style>
     <style>
         /* Embedded Base Styles */
         /* === CSS Variables (Defaults - Light Theme) === */
@@ -565,7 +563,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 .game-info > img {
     width: auto;
     height: auto;
-    max-width: 24%;
+    max-width: 26%;
     border: 1px solid var(--border-color);
     border-radius: 0px;
     box-shadow: 0 2px 4px var(--shadow-light);
@@ -1369,6 +1367,7 @@ transform: scale(0.98);
     text-align: left; /* Align text left */
     overflow: hidden;
     transition: box-shadow 0.2s ease, background-color 0.2s ease;
+	position: relative;
 }
 .game-card:hover {
      box-shadow: 0 4px 8px var(--shadow-color);
@@ -1451,6 +1450,7 @@ transform: scale(0.98);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+	padding-bottom: 10px;
 }
 .game-card .played-on-section small { /* "Played:" label */
      margin-right: 2px;
@@ -1466,6 +1466,137 @@ transform: scale(0.98);
 .game-card > *:last-child {
     margin-bottom: 0;
 }
+
+/* Styles for the link container and link at bottom of card */
+.card-link-container {
+    margin-top: auto; /* Push link to the bottom */
+    padding-top: 8px; /* Space above link */
+    border-top: 1px solid var(--border-light); /* Separator line */
+    text-align: center; /* Center link */
+    margin-bottom: 0; /* Remove default paragraph margin */
+}
+
+.card-file-link {
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.card-file-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+.card-file-link small {
+    font-size: inherit; /* Make small tag inherit link size */
+}
+
+.card-actions {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+/* --- Styles for Set Active Button --- */
+.set-active-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px; /* Adjusted padding */
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--element-bg);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    /* flex-grow: 1; */ /* Remove if only one button */
+    min-width: 100px; /* Adjust min-width */
+    color: var(--text-muted);
+	font-family: inherit;
+}
+
+.set-active-button img {
+    width: 24px; /* Icon size */
+    height: 24px;
+    margin-right: 5px;
+    object-fit: contain;
+}
+
+.set-active-button span {
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+/* Style when this card IS the active one */
+.game-card.active-card .set-active-button {
+    background-color: var(--primary-color);
+    color: #fff; /* Text color on active button */
+    font-weight: bold;
+}
+
+.game-card.active-card .set-active-button:hover {
+    background-color: var(--primary-hover);
+
+}
+
+.game-card.active-card .set-active-button img {
+   /* No change needed if default icon is already twitch_logo.png */
+}
+
+/* Style when this card is NOT the active one */
+.game-card:not(.active-card) .set-active-button:hover {
+    background-color: var(--accent-darker);
+    color: var(--text-color);
+}
+
+/* Tooltip Styles */
+.tooltip-feedback {
+    position: absolute;
+    bottom: calc(80% + 5px); /* Position directly above the container + 5px gap */
+    left: 50%;               /* Center horizontally */
+    transform: translateX(-50%); /* Fine-tune centering */
+    background-color: #333;
+    color: #fff;
+    padding: 4px 8px; /* Slightly smaller padding */
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s;
+    z-index: 10;
+    pointer-events: none;
+}
+.tooltip-feedback.show {
+    opacity: 0.9;
+    visibility: visible;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0s;
+}
+/* Optional Tooltip Arrow (Adjust positioning) */
+.tooltip-feedback::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+.tooltip-feedback.error { /* Keep error styling */
+    background-color: var(--error-color);
+}
+.tooltip-feedback.error::after { /* Match arrow color */
+     border-top-color: var(--error-color);
+}
+
+
+
 
 /* === NEW: Footer Area === */
 .footer-area {
@@ -1546,9 +1677,9 @@ body[data-theme="light"] .lightbox-overlay { background-color: rgba(50, 50, 50, 
     border-radius: 5px;
     /* box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);*/
     max-width: 90vw; /* Limit width */
-    max-height: 60vh; /* Limit height */
-    width: 850px; /* Default width, adjust as needed */
-    height: 60%; /* Default height, adjust as needed */
+    max-height: 70vh; /* Limit height */
+    width: 900px; /* Default width, adjust as needed */
+    height: 68%; /* Default height, adjust as needed */
     display: flex; /* Use flex for iframe */
     transform: scale(0.95); /* Start slightly smaller */
     transition: transform 0.3s ease-in-out;
@@ -1628,35 +1759,76 @@ body[data-theme="dannyvalz"] #save-obs-button { color: var(--text-color); } /* T
 body[data-theme="dannyvalz"] .store-button { color: #ffffff; } /* Override default text color for store buttons */
         /* Inject Computed Variables into :root */
         :root {
-    --bg-color: #212529;
-    --element-bg: #343a40;
+    --bg-color: #4a345c;
+    --element-bg: #3d2b4d;
     --text-color: #f8f9fa;
     --text-muted: #adb5bd;
-    --border-color: #495057;
-    --border-light: #495057;
-    --primary-color: #0d6efd;
-    --primary-hover: #0b5ed7;
-    --accent-color: #495057;
-    --accent-darker: #6c757d;
+    --border-color: #35293f;
+    --border-light: #302539;
+    --primary-color: #9612db;
+    --primary-hover: #790eb1;
+    --accent-color: #382646;
+    --accent-darker: #523d63;
     --error-color: #f86c7d;
-    --body-font: 'Tiny5', sans-serif;
-    --platform-logo-size: 20px;
+    --body-font: 'pxSans', sans-serif;
+    --platform-logo-size: 28px;
 
         }
         /* OBS Specific Overrides */
         body { position: relative; margin: 0 auto; background-color: transparent !important;}
-        #results { position: relative; max-width: 850px; border: none !important; box-shadow: none !important; padding: 25px !important; margin: 0 auto !important; }
+        #results { position: relative; max-width: 850px; background-color: var(--element-bg) !important; border: 8px solid var(--bg-color) !important; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3) !important; padding: 15px !important; margin: 0 auto !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
         #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
-		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin-top: -4px !important; margin-bottom: 8px !important; padding: 0 !important; font-size: 1.8em !important; z-index: auto; }
 		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
 		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
+		.game-details ul {margin: 0 0 0 0 !important;} 
     </style>
+	 <!-- NEW: Script to listen for messages from parent -->
+    <script>
+        window.addEventListener('message', (event) => {
+            // Basic security check: event.origin (use specific origin in production)
+            // console.log('iFrame received message:', event.data);
+            if (event.data && event.data.type === 'SET_THEME_VARS') {
+                const variables = event.data.payload; // This is the object { '--bg-color': '#...', ... } or null
+                const root = document.documentElement; // Get the :root element (html)
+
+                // Define the list of expected variables INSIDE the iframe script
+                const expectedVars = [
+                     '--bg-color', '--element-bg', '--text-color', '--text-muted',
+                     '--border-color', '--border-light', '--primary-color', '--primary-hover',
+                     '--accent-color', '--accent-darker', '--error-color', '--body-font',
+                     '--platform-logo-size'
+                ];
+
+                if (variables) {
+                    console.log('iFrame applying variables from parent:', variables);
+                    // Apply received variables as inline styles to :root
+                    expectedVars.forEach(varName => {
+                         if (variables[varName]) {
+                            root.style.setProperty(varName, variables[varName]);
+                         } else {
+                             // If parent didn't send a var, remove potential inline style
+                             // to ensure CSS definition takes over
+                              root.style.removeProperty(varName);
+                         }
+                    });
+                } else {
+                    console.log('iFrame received null variables, reverting to embedded styles.');
+                     // Parent wants iframe to use its own embedded styles, so remove all inline overrides
+                     expectedVars.forEach(varName => {
+                        root.style.removeProperty(varName);
+                    });
+                }
+            }
+        });
+    </script>
+    <!-- End Message Listener Script -->
 </head>
 <body class="">
     <div id="results">
-        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co2jmx.jpg" alt="Desert Strike: Return to the Gulf Box Art"><div class="game-details"><h2>Desert Strike: Return to the Gulf</h2><p class="game-developer"><strong>Electronic Arts</strong></p><p><strong>1 February 1992</strong></p><div id="game-rating-container"><span class="static-rating"><span class="stars">★★★★★</span><span class="stars-empty"></span></span></div><ul><li class="platform-item platform-item-selected" data-platform-name="DOS"><img src="../images/platforms/dos.png" alt="DOS logo" class="platform-logo"><span class="platform-name-text">DOS</span></li><li class="platform-item" data-platform-name="Super Nintendo Entertainment System"><img src="../images/platforms/snes.png" alt="Super Nintendo Entertainment System logo" class="platform-logo"><span class="platform-name-text">Super Nintendo Entertainment System</span></li><li class="platform-item" data-platform-name="Sega Mega Drive/Genesis"><img src="../images/platforms/megadrive.png" alt="Sega Mega Drive/Genesis logo" class="platform-logo"><span class="platform-name-text">Sega Mega Drive/Genesis</span></li><li class="platform-item" data-platform-name="Amiga"><img src="../images/platforms/amiga.png" alt="Amiga logo" class="platform-logo"><span class="platform-name-text">Amiga</span></li><li class="platform-item" data-platform-name="Game Boy Advance"><img src="../images/platforms/gba.png" alt="Game Boy Advance logo" class="platform-logo"><span class="platform-name-text">Game Boy Advance</span></li></ul></div></div>
+        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co2mli.jpg" alt="BioShock Box Art"><div class="game-details"><h2>BioShock</h2><p class="game-developer"><strong>2K Boston</strong></p><p><strong>21 August 2007</strong></p><div id="game-rating-container"><span class="static-rating"><span class="stars">★★★★★</span><span class="stars-empty"></span></span></div><ul><li class="platform-item platform-item-selected" data-platform-name="PC (Microsoft Windows)"><img src="../images/platforms/windows.png" alt="PC (Microsoft Windows) logo" class="platform-logo"><span class="platform-name-text">PC (Microsoft Windows)</span></li><li class="platform-item" data-platform-name="Mac"><img src="../images/platforms/mac.png" alt="Mac logo" class="platform-logo"><span class="platform-name-text">Mac</span></li><li class="platform-item" data-platform-name="Xbox 360"><img src="../images/platforms/xbox360.png" alt="Xbox 360 logo" class="platform-logo"><span class="platform-name-text">Xbox 360</span></li></ul></div></div>
     </div>
 </body>
 </html>

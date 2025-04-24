@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const resultsDiv = document.getElementById('results');
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
 	const ratingStyleGroup = document.getElementById('rating-style-group');
+	const lightboxStyleToggleGroup = document.getElementById('lightbox-style-toggle-group');
 	
 	// Lightbox Elements
 	const lightbox = document.getElementById('card-lightbox');
@@ -57,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
 	const OBS_URL = `${window.location.origin}/twitch/Current_GameGet.html`;
+	const LOCAL_STORAGE_LIGHTBOX_STYLE_KEY = 'lightboxStyleOverride'; // <-- Add Key
+    const THEME_VAR_NAMES = [ // List of vars to send to iframe
+         '--bg-color', '--element-bg', '--text-color', '--text-muted',
+         '--border-color', '--border-light', '--primary-color', '--primary-hover',
+         '--accent-color', '--accent-darker', '--error-color', '--body-font',
+         '--platform-logo-size'
+    ];
 	
 	// --- Default Theme Font Mapping ---
     const defaultThemeFonts = {
@@ -86,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
-        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform || !lightbox || !lightboxOverlay || !lightboxContent || !lightboxClose || !lightboxIframe) { 
+        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform || !lightbox || !lightboxOverlay || !lightboxContent || !lightboxClose || !lightboxIframe || !lightboxStyleToggleGroup) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
         return;
@@ -224,6 +232,31 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     });
     console.log("Lightbox listeners attached.");
     // --- End Lightbox ---
+	
+	// Lightbox Style Listener
+    lightboxStyleToggleGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+            applyLightboxStyleSetting(event.target.value); // value is 'card' or 'current'
+        }
+    });
+    console.log("Lightbox style listener attached.");
+	
+	// MODIFY: Update iframe if theme changes while lightbox is open
+    themeRadioGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+             applyTheme(event.target.value);
+             updateLightboxThemeIfOpen(); // <<< ADD Call
+        }
+    });
+    customColorInputs.forEach(picker => {
+        picker.addEventListener('input', (e) => { handleColorInputChange(e); updateLightboxThemeIfOpen(); });
+        picker.addEventListener('change', (e) => { handleColorInputChange(e); /* updateLightboxThemeIfOpen(); Maybe not needed on final change */ });
+    });
+    customHexInputs.forEach(hexInput => {
+        hexInput.addEventListener('change', (e) => { handleHexInputChange(e); updateLightboxThemeIfOpen(); }); 
+    });
+    fontSelector.addEventListener('change', (e) => { applyFont(e.target.value, true); updateLightboxThemeIfOpen(); } );
+	
 	
 	// End of Event Listeners
     console.log("Finished attaching event listeners.");
@@ -717,9 +750,38 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 	
+	// Apply Lightbox Style Setting
+    function applyLightboxStyleSetting(styleValue, savePref = true) {
+         console.log(`Setting lightbox style preference: ${styleValue}`);
+         if (savePref) {
+            localStorage.setItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY, styleValue);
+         }
+         // If lightbox is currently open, update its style now
+         updateLightboxThemeIfOpen();
+    }
+
+    // Helper to get current theme vars and send to iframe
+    function updateLightboxThemeIfOpen() {
+         if (!lightbox.classList.contains('lightbox-hidden') && lightboxIframe.contentWindow) {
+             const overrideEnabled = (localStorage.getItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY) || 'card') === 'current';
+             console.log(`Lightbox open, override enabled: ${overrideEnabled}. Sending message.`);
+
+             let themeVars = null; // Send null to tell iframe to use its own styles
+             if (overrideEnabled) {
+                  themeVars = {};
+                  const computedBodyStyle = getComputedStyle(document.body);
+                  THEME_VAR_NAMES.forEach(varName => {
+                       themeVars[varName] = computedBodyStyle.getPropertyValue(varName).trim();
+                  });
+             }
+
+             // Send message to iframe
+             // Target origin '*' is okay for localhost/file, but use specific origin in production
+             lightboxIframe.contentWindow.postMessage({ type: 'SET_THEME_VARS', payload: themeVars }, '*');
+         }
+    }      
       
-      
-function loadSettings() {
+	function loadSettings() {
         try { // Wrap entire function for safety
 			console.log("--- loadSettings START ---");
 
@@ -787,7 +849,13 @@ function loadSettings() {
 			applyStoreLinksToggle(storeLinksAreEnabled); // Apply class
             const valueToSelectStore = storeLinksAreEnabled ? 'on' : 'off';
             const currentStoreRadio = storeLinksToggleGroup.querySelector(`input[name="storeLinksToggle"][value="${valueToSelectStore}"]`);
-            if (currentStoreRadio) currentStoreRadio.checked = true; else { /* ... fallback check ... */ }
+            if (currentStoreRadio) currentStoreRadio.checked = true;
+			else {
+                 console.error(`Could not find platform text radio for value: ${textValueToSelect}. Checking default 'show'.`);
+                 const defaultTextRadio = platformTextToggleGroup.querySelector('input[name="platformTextToggle"][value="show"]');
+                 if (defaultTextRadio) defaultTextRadio.checked = true;
+                 if (!textIsVisible) applyPlatformTextVisibility(true); // Ensure state matches default check
+				 }
 
             // --- 6. Load Platform Display Settings: Logo Size ---
             const savedLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY);
@@ -800,21 +868,50 @@ function loadSettings() {
             applyPlatformTextVisibility(textIsVisible); // Apply class
             const textValueToSelect = textIsVisible ? 'show' : 'hide';
             const currentTextRadio = platformTextToggleGroup.querySelector(`input[name="platformTextToggle"][value="${textValueToSelect}"]`);
-            if (currentTextRadio) currentTextRadio.checked = true; else { /* ... fallback check ... */ }
+            if (currentTextRadio) currentTextRadio.checked = true;
+			else {
+                 console.error(`Could not find rating style radio for value: ${ratingStyleToApply}. Checking default '${defaultRatingStyle}'.`);
+                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
+                 if (defaultRatingRadio) defaultRatingRadio.checked = true;
+                 if (ratingStyleToApply !== defaultRatingStyle) applyRatingStyle(defaultRatingStyle, false);
+				 }
 
             // --- 8. Load Rating Display Style ---
             const savedRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY);
             const defaultRatingStyle = 'off';
             let ratingStyleToApply = savedRatingStyle || defaultRatingStyle;
             const validRatingStyles = Array.from(ratingStyleGroup.querySelectorAll('input[name="ratingStyle"]')).map(radio => radio.value);
-             if (!validRatingStyles.includes(ratingStyleToApply)) { /* ... handle invalid ... */ }
-            applyRatingStyle(ratingStyleToApply, false); // Apply style setting
+             if (!validRatingStyles.includes(ratingStyleToApply)) {
+                 console.warn(`Saved rating style "${ratingStyleToApply}" is invalid. Resetting to default "${defaultRatingStyle}".`);
+                 ratingStyleToApply = defaultRatingStyle;
+                 localStorage.removeItem(LOCAL_STORAGE_RATING_STYLE_KEY);
+				 }
+            applyRatingStyle(ratingStyleToApply, false); 
             const currentRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${ratingStyleToApply}"]`);
-            if (currentRatingRadio) currentRatingRadio.checked = true; else { /* ... fallback ... */ }
+            if (currentRatingRadio) currentRatingRadio.checked = true;
+			else {
+                 console.error(`Could not find rating style radio for value: ${ratingStyleToApply}. Checking default '${defaultRatingStyle}'.`);
+                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
+                 if (defaultRatingRadio) defaultRatingRadio.checked = true;
+                 if (ratingStyleToApply !== defaultRatingStyle) applyRatingStyle(defaultRatingStyle, false);
+				 }
 
+			// --- 9. Load Lightbox Style Override Setting --- // 
+            const savedLightboxStyle = localStorage.getItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY);
+            const lightboxStyleToApply = savedLightboxStyle || 'card'; // Default to 'card'
+            applyLightboxStyleSetting(lightboxStyleToApply, false); // Apply without saving
+            const currentLightboxRadio = lightboxStyleToggleGroup.querySelector(`input[name="lightboxStyle"][value="${lightboxStyleToApply}"]`);
+            if (currentLightboxRadio) currentLightboxRadio.checked = true;
+			else {
+                 console.error(`Could not find lightbox style radio for value: ${lightboxStyleToApply}. Checking default '${defaultLightboxStyle}'.`);
+                 const defaultLightboxRadio = lightboxStyleToggleGroup.querySelector(`input[name="lightboxStyle"][value="${defaultLightboxStyle}"]`);
+                 if (defaultLightboxRadio) defaultLightboxRadio.checked = true;
+                 if (lightboxStyleToApply !== defaultLightboxStyle) applyLightboxStyleSetting(defaultLightboxStyle, false);
+				 }
+			// --- End Lightbox Style Load ---
 
             // --- Final Log ---
-            console.log(`Loaded settings: Theme='${themeToApply}', Font='${finalAppliedFont || 'Default'}', StoreLinks='${storeLinksAreEnabled}', LogoSize='${initialLogoSize}', PlatformText='${textIsVisible}', RatingStyle='${ratingStyleToApply}'`);
+            console.log(`Loaded settings: Theme='${themeToApply}', Font='${finalAppliedFont || 'Default'}', StoreLinks='${storeLinksAreEnabled}', LogoSize='${initialLogoSize}', PlatformText='${textIsVisible}', RatingStyle='${ratingStyleToApply}', LightboxStyle='${lightboxStyleToApply}'`);
 
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
@@ -1858,6 +1955,30 @@ function loadSettings() {
     } 
     // --- End of Copy URL and Tooltip Functions ---	
 
+	// --- Lightbox Control Functions ---
+    function showLightbox(url) {
+        if (!url) return;
+        console.log("Showing lightbox for URL:", url);
+        // Set src and add listener for iframe load event
+        lightboxIframe.src = url;
+        lightboxIframe.onload = () => {
+             console.log("Lightbox iframe finished loading.");
+             // Send theme variables AFTER iframe has loaded its content
+             updateLightboxThemeIfOpen();
+             // Clear handler after first load
+             lightboxIframe.onload = null;
+        };
+        lightbox.classList.remove('lightbox-hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideLightbox() {
+        lightbox.classList.add('lightbox-hidden');
+        document.body.style.overflow = '';
+        setTimeout(() => { lightboxIframe.src = 'about:blank'; }, 300);
+    }
+	// --- End of Lightbox Control Functions ---	
+
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
         console.log("--- searchGamesList function CALLED ---"); // <<<--- DEBUG LOG
@@ -2611,14 +2732,55 @@ ${appliedVariablesString}
         }
         /* OBS Specific Overrides */
         body { position: relative; margin: 0 auto; background-color: transparent !important;}
-        #results { position: relative; max-width: 850px; border: none !important; box-shadow: none !important; padding: 25px !important; margin: 0 auto !important; }
+        #results { position: relative; max-width: 850px; background-color: var(--element-bg) !important; border: 8px solid var(--bg-color) !important; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3) !important; padding: 15px !important; margin: 0 auto !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
         #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
-		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin-top: -4px !important; margin-bottom: 8px !important; padding: 0 !important; font-size: 1.8em !important; z-index: auto; }
 		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
 		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
+		.game-details ul {margin: 0 0 0 0 !important;} 
     </style>
+	 <!-- NEW: Script to listen for messages from parent -->
+    <script>
+        window.addEventListener('message', (event) => {
+            // Basic security check: event.origin (use specific origin in production)
+            // console.log('iFrame received message:', event.data);
+            if (event.data && event.data.type === 'SET_THEME_VARS') {
+                const variables = event.data.payload; // This is the object { '--bg-color': '#...', ... } or null
+                const root = document.documentElement; // Get the :root element (html)
+
+                // Define the list of expected variables INSIDE the iframe script
+                const expectedVars = [
+                     '--bg-color', '--element-bg', '--text-color', '--text-muted',
+                     '--border-color', '--border-light', '--primary-color', '--primary-hover',
+                     '--accent-color', '--accent-darker', '--error-color', '--body-font',
+                     '--platform-logo-size'
+                ];
+
+                if (variables) {
+                    console.log('iFrame applying variables from parent:', variables);
+                    // Apply received variables as inline styles to :root
+                    expectedVars.forEach(varName => {
+                         if (variables[varName]) {
+                            root.style.setProperty(varName, variables[varName]);
+                         } else {
+                             // If parent didn't send a var, remove potential inline style
+                             // to ensure CSS definition takes over
+                              root.style.removeProperty(varName);
+                         }
+                    });
+                } else {
+                    console.log('iFrame received null variables, reverting to embedded styles.');
+                     // Parent wants iframe to use its own embedded styles, so remove all inline overrides
+                     expectedVars.forEach(varName => {
+                        root.style.removeProperty(varName);
+                    });
+                }
+            }
+        });
+    <\/script>
+    <!-- End Message Listener Script -->
 </head>
 <body class="${isPlatformTextHidden ? 'platform-text-hidden' : ''}">
     <div id="results">

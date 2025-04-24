@@ -620,7 +620,7 @@ body[data-theme="dark"] .type-game, body[data-theme="dark"] .type-fork { backgro
 .game-info > img {
     width: auto;
     height: auto;
-    max-width: 24%;
+    max-width: 26%;
     border: 1px solid var(--border-color);
     border-radius: 0px;
     box-shadow: 0 2px 4px var(--shadow-light);
@@ -1734,9 +1734,9 @@ body[data-theme="light"] .lightbox-overlay { background-color: rgba(50, 50, 50, 
     border-radius: 5px;
     /* box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);*/
     max-width: 90vw; /* Limit width */
-    max-height: 60vh; /* Limit height */
-    width: 850px; /* Default width, adjust as needed */
-    height: 60%; /* Default height, adjust as needed */
+    max-height: 70vh; /* Limit height */
+    width: 900px; /* Default width, adjust as needed */
+    height: 68%; /* Default height, adjust as needed */
     display: flex; /* Use flex for iframe */
     transform: scale(0.95); /* Start slightly smaller */
     transition: transform 0.3s ease-in-out;
