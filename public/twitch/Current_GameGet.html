@@ -1,96 +1,39 @@
-/* === CSS Variables (Defaults - Light Theme) === */
-:root {
-    /* Color Palette */
-    --bg-color: #f8f9fa;
-    --element-bg: #ffffff;
-    --text-color: #343a40;
-    --text-muted: #6c757d;
-    --border-color: #dee2e6;
-    --border-light: #e9ecef;
-    --primary-color: #007bff;
-    --primary-hover: #0056b3;
-    --accent-color: #f1f3f5; /* Used for hover, tags etc */
-    --accent-darker: #ced4da;
-    --error-color: #dc3545;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-    --shadow-light: rgba(0, 0, 0, 0.07);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGet Card - BioShock</title> <!-- Changed title -->
+    <!-- Embed Metadata -->
+    <meta name="gameget:id" content="20">
+    <meta name="gameget:name" content="BioShock">
+    <meta name="gameget:developer" content="2K Boston">
+    <meta name="gameget:releaseDate" content="21 August 2007">
+    <meta name="gameget:releaseTimestamp" content="1187654400">
+    <meta name="gameget:platforms" content="PC (Microsoft Windows),Mac,Xbox 360">
+    <meta name="gameget:coverUrl" content="https://images.igdb.com/igdb/image/upload/t_cover_big/co2mli.jpg">
+    <meta name="gameget:userRatingValue" content="5">
+    <meta name="gameget:userRatingStyle" content="stars">
+    <meta name="gameget:storeLinks" content="[{"name":"Steam","url":"https://store.steampowered.com/app/7670"},{"name":"GOG","url":"https://www.gog.com/game/bioshock_remastered"}]">
+    <meta name="gameget:userPlatform" content="PC (Microsoft Windows)">
+    <!-- Embed Font Definition -->
+    <style id="local-font-face">@font-face { font-family: 'pxSans'; src: url('../fonts/pxSans.woff') format('woff'); }</style>
+    <style>
+        /* Embedded Base Styles */
+        /* === CSS Variables (Defaults - Light Theme) === */
 
-    /* Font */
-    --body-font: 'pxSans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Default Font */
-
-	/* scrollbar-gutter overflow */
-	overflow:auto;
-	scrollbar-gutter: stable;
-}
 
 /* === Dark Theme === */
-body[data-theme="dark"] {
-    --bg-color: #212529;
-    --element-bg: #343a40;
-    --text-color: #f8f9fa;
-    --text-muted: #adb5bd;
-    --border-color: #495057;
-    --border-light: #495057;
-    --primary-color: #0d6efd; /* Slightly brighter blue for dark */
-    --primary-hover: #0b5ed7;
-    --accent-color: #495057;
-    --accent-darker: #6c757d;
-    --error-color: #f86c7d;
-    --shadow-color: rgba(255, 255, 255, 0.05);
-    --shadow-light: rgba(255, 255, 255, 0.07);
-}
+
 
 /* === Purple Theme === */
-body[data-theme="purple"] {
-    --bg-color: #4a345c;
-    --element-bg: #3d2b4d;
-    --text-color: #f8f9fa;
-    --text-muted: #adb5bd;
-    --border-color: #35293f;
-    --border-light: #302539;
-    --primary-color: #9612db; 
-    --primary-hover: #790eb1;
-    --accent-color: #382646;
-    --accent-darker: #523d63;
-    --error-color: #f86c7d;
-    --shadow-color: rgba(255, 255, 255, 0.05);
-    --shadow-light: rgba(255, 255, 255, 0.07);
-}
+
 
 /* === Hotdog Stand Theme === */
-body[data-theme="hotdogstand"] {
-    --bg-color: #FF0000;
-    --element-bg: #FFFF00;
-    --text-color: #000000; 
-    --text-muted: #000000;
-    --border-color: #000000;
-    --border-light: #000000;
-    --primary-color: #000000; 
-    --primary-hover: #808080;
-    --accent-color: #FF0000;
-    --accent-darker: #CED4DA;
-    --error-color: #DC3545;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-    --shadow-light: rgba(0, 0, 0, 0.07);
-}
+
 
 /* Super Secret Theme shhhhhh */
-body[data-theme="dannyvalz"] {
-    --bg-color: #6255a4;
-    --element-bg: #b4da55;
-    --text-color: #333564;
-    --text-muted: #ffffff;
-    --border-color: #cde68e;
-    --border-light: #cde68e;
-    --primary-color: #b4da55;
-    --primary-hover: #98c12b;
-    --accent-color: #92b928;
-    --accent-darker: #ffffff;
-    --error-color: #dc3545;
-    /* Define shadow colors if desired, otherwise they inherit from :root (light) */
-    --shadow-color: rgba(0, 0, 0, 0.07);
-    --shadow-light: rgba(0, 0, 0, 0.09);
-}
+
 
 /* === Global Styles & Body (Using Variables) === */
 *,
@@ -1814,3 +1757,78 @@ body[data-theme="dannyvalz"] #reset-custom-colors { color: var(--text-color); } 
 body[data-theme="dannyvalz"] .import-export-buttons button { color: var(--text-color); } /* Text on accent-darker */
 body[data-theme="dannyvalz"] #save-obs-button { color: var(--text-color); } /* Text on primary */
 body[data-theme="dannyvalz"] .store-button { color: #ffffff; } /* Override default text color for store buttons */
+        /* Inject Computed Variables into :root */
+        :root {
+    --bg-color: #4a345c;
+    --element-bg: #3d2b4d;
+    --text-color: #f8f9fa;
+    --text-muted: #adb5bd;
+    --border-color: #35293f;
+    --border-light: #302539;
+    --primary-color: #9612db;
+    --primary-hover: #790eb1;
+    --accent-color: #382646;
+    --accent-darker: #523d63;
+    --error-color: #f86c7d;
+    --body-font: 'pxSans', sans-serif;
+    --platform-logo-size: 28px;
+
+        }
+        /* OBS Specific Overrides */
+        body { position: relative; margin: 0 auto; background-color: transparent !important;}
+        #results { position: relative; max-width: 850px; background-color: var(--element-bg) !important; border: 8px solid var(--bg-color) !important; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3) !important; padding: 15px !important; margin: 0 auto !important; }
+        /* Hide interactive elements specifically for OBS */
+        #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
+        #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin-top: -4px !important; margin-bottom: 8px !important; padding: 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
+		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
+		.game-details ul {margin: 0 0 0 0 !important;} 
+    </style>
+	 <!-- NEW: Script to listen for messages from parent -->
+    <script>
+        window.addEventListener('message', (event) => {
+            // Basic security check: event.origin (use specific origin in production)
+            // console.log('iFrame received message:', event.data);
+            if (event.data && event.data.type === 'SET_THEME_VARS') {
+                const variables = event.data.payload; // This is the object { '--bg-color': '#...', ... } or null
+                const root = document.documentElement; // Get the :root element (html)
+
+                // Define the list of expected variables INSIDE the iframe script
+                const expectedVars = [
+                     '--bg-color', '--element-bg', '--text-color', '--text-muted',
+                     '--border-color', '--border-light', '--primary-color', '--primary-hover',
+                     '--accent-color', '--accent-darker', '--error-color', '--body-font',
+                     '--platform-logo-size'
+                ];
+
+                if (variables) {
+                    console.log('iFrame applying variables from parent:', variables);
+                    // Apply received variables as inline styles to :root
+                    expectedVars.forEach(varName => {
+                         if (variables[varName]) {
+                            root.style.setProperty(varName, variables[varName]);
+                         } else {
+                             // If parent didn't send a var, remove potential inline style
+                             // to ensure CSS definition takes over
+                              root.style.removeProperty(varName);
+                         }
+                    });
+                } else {
+                    console.log('iFrame received null variables, reverting to embedded styles.');
+                     // Parent wants iframe to use its own embedded styles, so remove all inline overrides
+                     expectedVars.forEach(varName => {
+                        root.style.removeProperty(varName);
+                    });
+                }
+            }
+        });
+    </script>
+    <!-- End Message Listener Script -->
+</head>
+<body class="">
+    <div id="results">
+        <div class="game-info"><img src="https://images.igdb.com/igdb/image/upload/t_cover_big/co2mli.jpg" alt="BioShock Box Art"><div class="game-details"><h2>BioShock</h2><p class="game-developer"><strong>2K Boston</strong></p><p><strong>21 August 2007</strong></p><div id="game-rating-container"><span class="static-rating"><span class="stars">★★★★★</span><span class="stars-empty"></span></span></div><ul><li class="platform-item platform-item-selected" data-platform-name="PC (Microsoft Windows)"><img src="../images/platforms/windows.png" alt="PC (Microsoft Windows) logo" class="platform-logo"><span class="platform-name-text">PC (Microsoft Windows)</span></li><li class="platform-item" data-platform-name="Mac"><img src="../images/platforms/mac.png" alt="Mac logo" class="platform-logo"><span class="platform-name-text">Mac</span></li><li class="platform-item" data-platform-name="Xbox 360"><img src="../images/platforms/xbox360.png" alt="Xbox 360 logo" class="platform-logo"><span class="platform-name-text">Xbox 360</span></li></ul></div></div>
+    </div>
+</body>
+</html>

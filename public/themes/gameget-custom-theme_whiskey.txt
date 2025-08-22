@@ -1,16 +1,16 @@
 # GameGet Custom Theme Export
-# Theme saved: 2025-04-15T00:16:27.444Z
+# Theme saved: 2025-04-22T22:26:23.720Z
 # Note: Font preference is included if set for the 'custom' theme.
 
 --bg-color = #45283c
---element-bg = #45283c
+--element-bg = #523047
 --text-color = #ffffff
---text-muted = #ffffff
---border-color = #cbdbfc
---border-light = #45283c
+--text-muted = #d3c9d0
+--border-color = #56324d
+--border-light = #ae75a0
 --primary-color = #7d165c
 --primary-hover = #9b1c72
---accent-color = #45283c
+--accent-color = #3c2234
 --accent-darker = #7d165c
 --error-color = #dc3545
 

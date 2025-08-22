@@ -7,8 +7,27 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     const resultsDiv = document.getElementById('results');
     const obsButtonContainer = document.getElementById('obs-button-container'); // Save for OBS button
 	const ratingStyleGroup = document.getElementById('rating-style-group');
+	const lightboxStyleToggleGroup = document.getElementById('lightbox-style-toggle-group');
 	
-
+	// Lightbox Elements
+	const lightbox = document.getElementById('card-lightbox');
+    const lightboxOverlay = lightbox.querySelector('.lightbox-overlay');
+    const lightboxContent = lightbox.querySelector('.lightbox-content');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const lightboxIframe = document.getElementById('lightbox-iframe');
+	
+	// Collection Elements
+	const tabsContainer = document.querySelector('.tabs-container');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+	const refreshCollectionButton = document.getElementById('refresh-collection-button');
+    const collectionStatus = document.getElementById('collection-status');
+    const collectionGrid = document.getElementById('collection-grid');
+    const collectionFilterTitle = document.getElementById('collection-filter-title');
+    const collectionSortSelect = document.getElementById('collection-sort-select');
+	const collectionFilterDeveloper = document.getElementById('collection-filter-developer'); 
+    const collectionFilterPlatform = document.getElementById('collection-filter-platform');
+	
     // Settings Elements
     const settingsCog = document.getElementById('settings-cog');
     const settingsPanel = document.getElementById('settings-panel');
@@ -38,8 +57,16 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 	const LOCAL_STORAGE_STORE_LINKS_KEY = 'storeLinksEnabled'; // Use generic key
 	const DYNAMIC_FONT_STYLE_ID = 'dynamic-font-faces'; // ID for our style tag
 	const LOCAL_STORAGE_RATING_STYLE_KEY = 'ratingDisplayStyle';
+	const OBS_URL = `${window.location.origin}/twitch/Current_GameGet.html`;
+	const LOCAL_STORAGE_LIGHTBOX_STYLE_KEY = 'lightboxStyleOverride'; // <-- Add Key
+    const THEME_VAR_NAMES = [ // List of vars to send to iframe
+         '--bg-color', '--element-bg', '--text-color', '--text-muted',
+         '--border-color', '--border-light', '--primary-color', '--primary-hover',
+         '--accent-color', '--accent-darker', '--error-color', '--body-font',
+         '--platform-logo-size'
+    ];
 	
-	// --- NEW: Default Theme Font Mapping ---
+	// --- Default Theme Font Mapping ---
     const defaultThemeFonts = {
         'light': "'Monda', sans-serif",
         'dark': "'Monda', sans-serif",
@@ -59,10 +86,15 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     let currentGameRating = { gameId: null, value: null }; // Stores { gameId: 123, value: 4 } or { gameId: 456, value: 85 } etc.
 	let currentPlatformsOrder = []; // Store current platform order
 	let selectedPlatformName = null; // Global state for selected platform name
+	let gameCardCollection = []; // Array holds metadata objects {id, name, developer, ...}
+	let activeCardFilename = null; // Track active card for OBS output
+    let tooltipTimeout = null;
+    // let userCardNumbering = {}; // Add later if implementing numbering
+
 
     // --- Verify crucial elements exist ---
     if (!searchButton || !gameInput || !resultsDiv || !storeLinksToggleGroup || !exportButton || !importButton || !importFileInput || !obsButtonContainer || !settingsCog || !settingsPanel || !settingsClose || !themeRadioGroup || !fontSelector || !refreshFontsButton || !customColorEditor || !resetCustomColorsButton
-        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup ) { 
+        || !platformLogoSizeInput || !ratingStyleGroup || !platformTextToggleGroup || !tabsContainer || !collectionFilterDeveloper || !collectionFilterPlatform || !lightbox || !lightboxOverlay || !lightboxContent || !lightboxClose || !lightboxIframe || !lightboxStyleToggleGroup) { 
         console.error("CRITICAL ERROR: One or more essential UI elements not found! Check IDs in index.html and script.js");
         alert("Initialization Error: UI elements missing. App may not function correctly.");
         return;
@@ -143,6 +175,88 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     });
     console.log("Secret theme key listener attached.");
+	
+   // --- Tab Switching Listener ---
+    tabsContainer.addEventListener('click', (e) => {
+        // Use closest to handle clicks on icon/text inside button
+        const button = e.target.closest('.tab-button');
+        if (button) {
+            const targetId = button.dataset.tabTarget; // Get the ID of the content to show (e.g., "search-screen" or "collection-screen")
+            console.log(`Switching tab to: ${targetId}`);
+
+            // 1. Deactivate all buttons and hide all content sections
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active')); // 'active' class likely controls display:block/none in CSS
+
+            // 2. Activate the clicked button and show the target content section
+            button.classList.add('active');
+            const targetContent = document.getElementById(targetId);
+            if(targetContent) {
+                targetContent.classList.add('active'); // Add 'active' class to show it
+                console.log(`Activated content section: #${targetId}`);
+            } else {
+                console.error(`Target tab content #${targetId} not found!`);
+            }
+
+            // 3. Optionally load collection data if switching to that tab
+            if (targetId === 'collection-screen' && gameCardCollection.length === 0) {
+                 console.log("Collection tab activated, loading initial collection...");
+                 loadCollection(); // Trigger load on first view
+            }
+        }
+    });
+    console.log("Tab listeners attached.");
+    // --- End Tab Listener ---
+
+
+    // --- Collection Control Listeners ---
+    refreshCollectionButton.addEventListener('click', loadCollection);
+    console.log("Collection control listeners attached.");
+
+    // --- Filter/Sort Listeners ---
+    collectionFilterTitle.addEventListener('input', () => renderCollectionGrid(gameCardCollection));
+    collectionSortSelect.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+	collectionFilterDeveloper.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+    collectionFilterPlatform.addEventListener('change', () => renderCollectionGrid(gameCardCollection));
+
+    console.log("Collection filter/sort listeners attached.");
+	
+	// --- Lightbox Listeners ---
+    lightboxClose.addEventListener('click', hideLightbox);
+    lightboxOverlay.addEventListener('click', hideLightbox);
+    // Optional: Close lightbox on Escape key press
+    document.addEventListener('keydown', (e) => {
+         if (e.key === 'Escape' && !lightbox.classList.contains('lightbox-hidden')) {
+             hideLightbox();
+         }
+    });
+    console.log("Lightbox listeners attached.");
+    // --- End Lightbox ---
+	
+	// Lightbox Style Listener
+    lightboxStyleToggleGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+            applyLightboxStyleSetting(event.target.value); // value is 'card' or 'current'
+        }
+    });
+    console.log("Lightbox style listener attached.");
+	
+	// MODIFY: Update iframe if theme changes while lightbox is open
+    themeRadioGroup.addEventListener('change', (event) => {
+        if (event.target.type === 'radio') {
+             applyTheme(event.target.value);
+             updateLightboxThemeIfOpen(); // <<< ADD Call
+        }
+    });
+    customColorInputs.forEach(picker => {
+        picker.addEventListener('input', (e) => { handleColorInputChange(e); updateLightboxThemeIfOpen(); });
+        picker.addEventListener('change', (e) => { handleColorInputChange(e); /* updateLightboxThemeIfOpen(); Maybe not needed on final change */ });
+    });
+    customHexInputs.forEach(hexInput => {
+        hexInput.addEventListener('change', (e) => { handleHexInputChange(e); updateLightboxThemeIfOpen(); }); 
+    });
+    fontSelector.addEventListener('change', (e) => { applyFont(e.target.value, true); updateLightboxThemeIfOpen(); } );
+	
 	
 	// End of Event Listeners
     console.log("Finished attaching event listeners.");
@@ -331,37 +445,27 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
      function applyTheme(themeName) {
         console.log(`Applying theme: ${themeName}`);
         try {
-            const previousTheme = document.body.dataset.theme; // Get theme BEFORE changing it
-			
-			// Clear inline styles if switching FROM custom/dannyvalz TO a preset
-            if ((previousTheme === 'custom' || previousTheme === 'dannyvalz') &&
-                (themeName !== 'custom' && themeName !== 'dannyvalz')) {
-                console.log(`Switching from ${previousTheme} to preset ${themeName}, clearing inline styles...`);
-                customColorInputs.forEach(picker => { if (picker.dataset.varname) document.body.style.removeProperty(picker.dataset.varname); });
-                document.body.style.removeProperty('--body-font'); // Clear font too
-            }
-			
-			// Apply theme attribute
-            document.body.dataset.theme = themeName; 
-            // Save preference *unless* it's the secret theme
+            // Apply theme attribute FIRST - this is needed for computed style reading later
+            document.body.dataset.theme = themeName;
+            console.log(`Set data-theme to: ${themeName}`);
+
+            // Save preference (unless secret theme, handle revert)
             if (themeName !== 'dannyvalz') {
                  localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
                  console.log(`Saved theme preference: ${themeName}`);
             } else {
-                console.log("Not saving 'dannyvalz' as theme preference.");
-                // Optional: Revert localStorage to the *previous* non-secret theme?
-                // This prevents dannyvalz from loading on refresh.
-                // If previousTheme was a valid non-secret theme, save that one.
+                 // Revert saved pref if activating secret theme
+                 const previousTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY); // Read from storage
                  const validThemes = Array.from(themeRadioGroup.querySelectorAll('input[name="theme"]')).map(radio => radio.value);
                  if (previousTheme && previousTheme !== 'dannyvalz' && validThemes.includes(previousTheme)) {
-                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, previousTheme);
-                     console.log(`Reverted saved theme preference to: ${previousTheme}`);
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, previousTheme); // Keep last valid
+                     console.log(`Secret theme active. Kept saved theme pref: ${previousTheme}`);
                  } else {
-                     // If previous was also dannyvalz or invalid, revert to default light
-                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light');
-                     console.log("Reverted saved theme preference to: light");
+                     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light'); // Default if needed
+                     console.log("Secret theme active. Reverted saved theme preference to: light");
                  }
             }
+
 			
 			// --- Handle Styles/Editor/Font ---
             if (themeName === 'custom') {
@@ -382,23 +486,30 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                 customColorEditor.style.display = 'none';
                 // Inline styles should have been cleared above if needed
 
-                // --- Apply Font for Presets/DannyValz ---
-                let fontToApply = null;
-                if (themeName === 'dannyvalz') {
-                     fontToApply = defaultThemeFonts['dannyvalz'];
-                     console.log(` -> Secret theme, using specific font: ${fontToApply}`);
-                } else {
-                     const themePrefs = getThemeFontPrefs();
-                     fontToApply = themePrefs[themeName]; // Check user pref for THIS theme
-                     if (!fontToApply) { // If no user pref, use theme default
-                          fontToApply = defaultThemeFonts[themeName] || systemDefaultFont;
-                          console.log(` -> No user preference for '${themeName}', using default: ${fontToApply}`);
-                     } else {
-                          console.log(` -> Found user preference for '${themeName}': ${fontToApply}`);
+				// --- ALWAYS Clear Inline Styles when NOT 'custom' ---
+                console.log(`Clearing potentially conflicting inline styles for theme '${themeName}'...`);
+                customColorInputs.forEach(picker => {
+                     if (picker.dataset.varname) {
+                         document.body.style.removeProperty(picker.dataset.varname);
                      }
+                });
+                // Clear font only if the target theme isn't dannyvalz (which sets its own)
+                // Although applyFont below will override anyway, this is slightly cleaner.
+                if (themeName !== 'dannyvalz') {
+                     document.body.style.removeProperty('--body-font');
                 }
-                 // Apply the determined font WITHOUT saving pref again
-                 applyFont(fontToApply, false);
+                console.log("Cleared potentially conflicting inline styles.");
+                // --- END Clear ---	
+
+                 // --- Apply Font for Presets/DannyValz ---
+                let fontToApply = defaultThemeFonts[themeName] || systemDefaultFont; // Default for this theme
+                // For presets only, check if user saved a preference
+                if (themeName !== 'dannyvalz') {
+                     const themePrefs = getThemeFontPrefs();
+                     fontToApply = themePrefs[themeName] || fontToApply; // Use user pref if exists, else theme default
+                }
+                console.log(`Applying font for '${themeName}': ${fontToApply}`);
+                applyFont(fontToApply, false); // Apply determined font (don't save pref here)
             }
 
             // --- Update Font Selector Dropdown AFTER applying font ---
@@ -505,19 +616,19 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
     
     async function loadLocalFonts() {
         console.log("Loading local fonts from fonts.json...");
+        // --- Step 0: Store current selection ---
+        const previouslySelectedFontValue = fontSelector.value;
+        console.log("Storing previously selected font value:", previouslySelectedFontValue);
+        // --- End Step 0 ---
+
         try {
-            const response = await fetch('fonts/fonts.json'); // Fetch the JSON file
-            if (!response.ok) {
-                throw new Error(`Failed to fetch fonts.json: ${response.status}`);
-            }
+            console.log("Fetching fonts/fonts.json...");
+            const response = await fetch('fonts/fonts.json');
+            if (!response.ok) { throw new Error(`Fetch failed: ${response.status}`); }
             const localFonts = await response.json();
-
-            if (!Array.isArray(localFonts)) {
-                 throw new Error("fonts.json did not contain a valid array.");
-            }
-
-            console.log("Found local fonts:", localFonts);
-			
+            if (!Array.isArray(localFonts)) { throw new Error("Invalid array format."); }
+            console.log("Found local fonts data:", localFonts);
+		
 			// --- Create Style Tag for Dynamic Fonts ---
 			let dynamicFontStyleSheet = document.getElementById(DYNAMIC_FONT_STYLE_ID);
 			if (!dynamicFontStyleSheet) {
@@ -527,13 +638,13 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
 			console.log("Created style tag for dynamic fonts.");
 			}
 
-            // 1. Clear previous dynamic font options and styles
+            // --- Step 1: Clear previous dynamic font options and styles ---
             const existingOptions = fontSelector.querySelectorAll('option[data-dynamic-font]');
-			console.log(`Clearing ${existingOptions.length} existing dynamic font options.`);
+            console.log(`Clearing ${existingOptions.length} existing dynamic options.`);
             existingOptions.forEach(option => option.remove());
-            dynamicFontStyleSheet.innerHTML = ''; // Clear previous @font-face rules
+            dynamicFontStyleSheet.innerHTML = ''; // Clear rules
 
-            // 2. Generate @font-face rules and add options
+            // --- Step 2: Generate @font-face rules and add options ---
             let fontFaceRules = "";
 			let optionsAddedCount = 0;
             localFonts.forEach(font => {
@@ -589,16 +700,40 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
                 }
             });
 
-            // 3. Add all @font-face rules to the style tag
+            // --- Step 3: Add all @font-face rules ---
             dynamicFontStyleSheet.innerHTML = fontFaceRules;
             console.log("Added @font-face rules and dropdown options.");
-
+			
+			// --- Step 4: Restore Dropdown Selection ---
+            // Check if the previously selected value is still a valid option
+            const validOptionsNow = Array.from(fontSelector.options).map(opt => opt.value);
+            if (validOptionsNow.includes(previouslySelectedFontValue)) {
+                console.log("Restoring previous font selection in dropdown:", previouslySelectedFontValue);
+                fontSelector.value = previouslySelectedFontValue;
+                 // Re-apply the font style itself to be absolutely sure, without saving pref again
+                 applyFont(previouslySelectedFontValue, false);
+            } else {
+                 // If previous selection is gone (e.g., font removed from JSON), select the current computed font or default
+                 console.warn(`Previously selected font "${previouslySelectedFontValue}" no longer exists. Selecting current computed font.`);
+                 const currentComputedFont = getComputedStyle(document.body).getPropertyValue('--body-font').trim();
+                 if (validOptionsNow.includes(currentComputedFont)) {
+                     fontSelector.value = currentComputedFont;
+                 } else {
+                     fontSelector.value = systemDefaultFont; // Ultimate fallback
+                 }
+                 // Apply the font style that the dropdown now shows
+                 applyFont(fontSelector.value, false);
+            }
+            // --- End Step 4 ---
+			
         } catch (error) {
             console.error("Error loading or processing local fonts:", error);
             dynamicFontStyleSheet.innerHTML = '/* Error loading font definitions */'; // Clear on error
              // Optionally inform user: alert("Could not load local fonts from fonts.json.");
         }
+		finally { console.log("--- loadLocalFonts END ---"); }
     }
+	// --- END Load Local Fonts ---
 	
 	function applyRatingStyle(style, savePreference = true) {
         console.log(`Applying rating style: ${style}`);
@@ -615,9 +750,38 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
         }
     }
 	
+	// Apply Lightbox Style Setting
+    function applyLightboxStyleSetting(styleValue, savePref = true) {
+         console.log(`Setting lightbox style preference: ${styleValue}`);
+         if (savePref) {
+            localStorage.setItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY, styleValue);
+         }
+         // If lightbox is currently open, update its style now
+         updateLightboxThemeIfOpen();
+    }
+
+    // Helper to get current theme vars and send to iframe
+    function updateLightboxThemeIfOpen() {
+         if (!lightbox.classList.contains('lightbox-hidden') && lightboxIframe.contentWindow) {
+             const overrideEnabled = (localStorage.getItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY) || 'card') === 'current';
+             console.log(`Lightbox open, override enabled: ${overrideEnabled}. Sending message.`);
+
+             let themeVars = null; // Send null to tell iframe to use its own styles
+             if (overrideEnabled) {
+                  themeVars = {};
+                  const computedBodyStyle = getComputedStyle(document.body);
+                  THEME_VAR_NAMES.forEach(varName => {
+                       themeVars[varName] = computedBodyStyle.getPropertyValue(varName).trim();
+                  });
+             }
+
+             // Send message to iframe
+             // Target origin '*' is okay for localhost/file, but use specific origin in production
+             lightboxIframe.contentWindow.postMessage({ type: 'SET_THEME_VARS', payload: themeVars }, '*');
+         }
+    }      
       
-      
-function loadSettings() {
+	function loadSettings() {
         try { // Wrap entire function for safety
 			console.log("--- loadSettings START ---");
 
@@ -685,7 +849,13 @@ function loadSettings() {
 			applyStoreLinksToggle(storeLinksAreEnabled); // Apply class
             const valueToSelectStore = storeLinksAreEnabled ? 'on' : 'off';
             const currentStoreRadio = storeLinksToggleGroup.querySelector(`input[name="storeLinksToggle"][value="${valueToSelectStore}"]`);
-            if (currentStoreRadio) currentStoreRadio.checked = true; else { /* ... fallback check ... */ }
+            if (currentStoreRadio) currentStoreRadio.checked = true;
+			else {
+                 console.error(`Could not find platform text radio for value: ${textValueToSelect}. Checking default 'show'.`);
+                 const defaultTextRadio = platformTextToggleGroup.querySelector('input[name="platformTextToggle"][value="show"]');
+                 if (defaultTextRadio) defaultTextRadio.checked = true;
+                 if (!textIsVisible) applyPlatformTextVisibility(true); // Ensure state matches default check
+				 }
 
             // --- 6. Load Platform Display Settings: Logo Size ---
             const savedLogoSize = localStorage.getItem(LOCAL_STORAGE_LOGO_SIZE_KEY);
@@ -698,21 +868,50 @@ function loadSettings() {
             applyPlatformTextVisibility(textIsVisible); // Apply class
             const textValueToSelect = textIsVisible ? 'show' : 'hide';
             const currentTextRadio = platformTextToggleGroup.querySelector(`input[name="platformTextToggle"][value="${textValueToSelect}"]`);
-            if (currentTextRadio) currentTextRadio.checked = true; else { /* ... fallback check ... */ }
+            if (currentTextRadio) currentTextRadio.checked = true;
+			else {
+                 console.error(`Could not find rating style radio for value: ${ratingStyleToApply}. Checking default '${defaultRatingStyle}'.`);
+                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
+                 if (defaultRatingRadio) defaultRatingRadio.checked = true;
+                 if (ratingStyleToApply !== defaultRatingStyle) applyRatingStyle(defaultRatingStyle, false);
+				 }
 
             // --- 8. Load Rating Display Style ---
             const savedRatingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY);
             const defaultRatingStyle = 'off';
             let ratingStyleToApply = savedRatingStyle || defaultRatingStyle;
             const validRatingStyles = Array.from(ratingStyleGroup.querySelectorAll('input[name="ratingStyle"]')).map(radio => radio.value);
-             if (!validRatingStyles.includes(ratingStyleToApply)) { /* ... handle invalid ... */ }
-            applyRatingStyle(ratingStyleToApply, false); // Apply style setting
+             if (!validRatingStyles.includes(ratingStyleToApply)) {
+                 console.warn(`Saved rating style "${ratingStyleToApply}" is invalid. Resetting to default "${defaultRatingStyle}".`);
+                 ratingStyleToApply = defaultRatingStyle;
+                 localStorage.removeItem(LOCAL_STORAGE_RATING_STYLE_KEY);
+				 }
+            applyRatingStyle(ratingStyleToApply, false); 
             const currentRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${ratingStyleToApply}"]`);
-            if (currentRatingRadio) currentRatingRadio.checked = true; else { /* ... fallback ... */ }
+            if (currentRatingRadio) currentRatingRadio.checked = true;
+			else {
+                 console.error(`Could not find rating style radio for value: ${ratingStyleToApply}. Checking default '${defaultRatingStyle}'.`);
+                 const defaultRatingRadio = ratingStyleGroup.querySelector(`input[name="ratingStyle"][value="${defaultRatingStyle}"]`);
+                 if (defaultRatingRadio) defaultRatingRadio.checked = true;
+                 if (ratingStyleToApply !== defaultRatingStyle) applyRatingStyle(defaultRatingStyle, false);
+				 }
 
+			// --- 9. Load Lightbox Style Override Setting --- // 
+            const savedLightboxStyle = localStorage.getItem(LOCAL_STORAGE_LIGHTBOX_STYLE_KEY);
+            const lightboxStyleToApply = savedLightboxStyle || 'card'; // Default to 'card'
+            applyLightboxStyleSetting(lightboxStyleToApply, false); // Apply without saving
+            const currentLightboxRadio = lightboxStyleToggleGroup.querySelector(`input[name="lightboxStyle"][value="${lightboxStyleToApply}"]`);
+            if (currentLightboxRadio) currentLightboxRadio.checked = true;
+			else {
+                 console.error(`Could not find lightbox style radio for value: ${lightboxStyleToApply}. Checking default '${defaultLightboxStyle}'.`);
+                 const defaultLightboxRadio = lightboxStyleToggleGroup.querySelector(`input[name="lightboxStyle"][value="${defaultLightboxStyle}"]`);
+                 if (defaultLightboxRadio) defaultLightboxRadio.checked = true;
+                 if (lightboxStyleToApply !== defaultLightboxStyle) applyLightboxStyleSetting(defaultLightboxStyle, false);
+				 }
+			// --- End Lightbox Style Load ---
 
             // --- Final Log ---
-            console.log(`Loaded settings: Theme='${themeToApply}', Font='${finalAppliedFont || 'Default'}', StoreLinks='${storeLinksAreEnabled}', LogoSize='${initialLogoSize}', PlatformText='${textIsVisible}', RatingStyle='${ratingStyleToApply}'`);
+            console.log(`Loaded settings: Theme='${themeToApply}', Font='${finalAppliedFont || 'Default'}', StoreLinks='${storeLinksAreEnabled}', LogoSize='${initialLogoSize}', PlatformText='${textIsVisible}', RatingStyle='${ratingStyleToApply}', LightboxStyle='${lightboxStyleToApply}'`);
 
         } catch (e) {
             console.error("Critical error during loadSettings:", e);
@@ -1176,6 +1375,610 @@ function loadSettings() {
         }
     }
 
+	 // Collection Functions
+	 
+	 /**
+     * Populates a select dropdown with unique options from the collection data.
+     * @param {HTMLSelectElement} selectElement - The dropdown element.
+     * @param {Array<object>} collectionData - The array of metadata objects.
+     * @param {string} metadataKey - The key in the metadata object to extract values from (e.g., 'developer', 'platforms').
+     * @param {string} defaultOptionText - Text for the initial default option (e.g., "Filter by Developer...").
+     */
+    function populateFilterDropdown(selectElement, collectionData, metadataKey, defaultOptionText) {
+        if (!selectElement) return;
+
+        const currentValue = selectElement.value; // Preserve current selection if possible
+        selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Reset options
+
+        const uniqueValues = new Set();
+
+        collectionData.forEach(cardMeta => {
+            const value = cardMeta[metadataKey];
+            if (Array.isArray(value)) { // Handle arrays like platforms/genres
+                value.forEach(item => { if (item) uniqueValues.add(item.trim()); });
+            } else if (value && typeof value === 'string') {
+                uniqueValues.add(value.trim());
+            }
+        });
+
+        // Sort alphabetically and add options
+        [...uniqueValues].sort((a, b) => a.localeCompare(b)).forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            selectElement.appendChild(option);
+        });
+
+        // Restore previous selection if it still exists
+        if (selectElement.querySelector(`option[value="${CSS.escape(currentValue)}"]`)) {
+             selectElement.value = currentValue;
+        }
+    } // End populateFilterDropdown
+	
+	 // Reads collection data from backend API
+     async function loadCollection() {
+         console.log("Loading collection from backend API...");
+         collectionStatus.textContent = 'Status: Loading collection...';
+         collectionGrid.innerHTML = '<p class="info-message loading">Loading collection...</p>';
+         refreshCollectionButton.disabled = true; // Disable button while loading
+
+         try {
+            const response = await fetch(`${API_BASE_URL}/api/getCollection`);
+            if (!response.ok) {
+                 const errorData = await response.json().catch(() => ({ error: `Server returned status ${response.status}` }));
+                 throw new Error(errorData.error || `Failed to load collection: ${response.status}`);
+            }
+
+            const collectionData = await response.json(); // Expecting array of metadata objects
+
+            if (!Array.isArray(collectionData)) {
+                 throw new Error("Received invalid data format from server.");
+            }
+
+            gameCardCollection = collectionData; // Update global collection
+			console.log(`Collection loaded: ${gameCardCollection.length} cards found.`);
+			activeCardFilename = localStorage.getItem('activeCardFilename'); // <<< Try to load active card
+			console.log(`Collection loaded. Active card on load: ${activeCardFilename}`);
+            collectionStatus.textContent = `Status: Loaded ${gameCardCollection.length} cards.`;
+
+			// Populate Filter Dropdowns
+            console.log("Populating filter dropdowns...");
+            populateFilterDropdown(collectionFilterDeveloper, gameCardCollection, 'developer', 'Developed by...');
+            populateFilterDropdown(collectionFilterPlatform, gameCardCollection, 'platforms', 'Released on...');
+            console.log("Filter dropdowns populated.");
+            
+
+            // Render the grid with the loaded data (triggers sort/filter)
+            renderCollectionGrid(gameCardCollection);
+
+         } catch (error) {
+             console.error('Error loading collection:', error);
+             collectionStatus.textContent = 'Status: Error loading collection.';
+             collectionGrid.innerHTML = `<p class="error-message">Error loading collection: ${error.message}</p>`;
+             alert(`Error loading collection: ${error.message}`);
+             gameCardCollection = []; // Reset collection on error
+             renderCollectionGrid([]); // Render empty grid
+         } finally {
+             refreshCollectionButton.disabled = false; // Re-enable refresh button
+         }
+     } // End loadCollection
+
+
+    /**
+     * Renders the game cards in the collection grid based on current data, filters, and sort.
+     * @param {Array<object>} collectionData - The array of METADATA objects.
+     */
+    function renderCollectionGrid(collectionData) {
+        console.log("Rendering collection grid...");
+        collectionGrid.innerHTML = '';
+
+        if (!Array.isArray(collectionData) || collectionData.length === 0) {
+            collectionGrid.innerHTML = '<p class="info-message">No game cards found or loaded yet.<br>Save game details and place files in `public/results`, then Refresh.</p>';
+            return;
+        }
+
+        // --- Apply Filtering ---
+        const titleFilter = collectionFilterTitle.value.toLowerCase().trim();
+        const developerFilter = collectionFilterDeveloper.value; // Get selected developer
+        const platformFilter = collectionFilterPlatform.value;   // Get selected platform
+
+        console.log(`Filtering by: Title='${titleFilter}', Dev='${developerFilter}', Platform='${platformFilter}'`);
+
+        let filteredData = collectionData.filter(cardMeta => {
+             // Title Filter (keep existing)
+             const titleMatch = !titleFilter || cardMeta.name?.toLowerCase().includes(titleFilter);
+
+             // Developer Filter
+             const developerMatch = !developerFilter || cardMeta.developer === developerFilter;
+
+             // Platform Filter (check if selected platform is in the card's array)
+             const platformMatch = !platformFilter || (Array.isArray(cardMeta.platforms) && cardMeta.platforms.includes(platformFilter));
+
+             return titleMatch && developerMatch && platformMatch; // Must match all active filters
+        });
+        // --- End Filtering ---
+
+
+        // --- Apply Sorting (with Normalization for Rating) ---
+        const sortValue = collectionSortSelect.value;
+        console.log(`Sorting by: ${sortValue}`);
+        let sortedData = [...filteredData]; // Work on a copy
+
+        // Helper function to get a comparable numeric rating value (0-100 scale for stars/percent)
+        const getComparableRating = (meta) => {
+            if (meta.userRatingValue === null || meta.userRatingValue === undefined) {
+                return null; // Unrated items
+            }
+            const style = meta.userRatingStyle || 'score'; // Default to 'score' if style missing
+            const value = Number(meta.userRatingValue);
+
+            if (isNaN(value)) return null; // Invalid number
+
+            switch (style) {
+                case 'stars':
+                    // Scale 1-5 stars to 0-100 (approx. 20 points per star)
+                    // Clamp value 0-5 first for safety
+                    const clampedStarValue = Math.max(0, Math.min(5, value));
+                    return clampedStarValue * 20;
+                case 'percent':
+                     // Value is already 0-100, clamp for safety
+                    return Math.max(0, Math.min(100, value));
+                case 'score':
+                     // Treat score differently - map to a higher range or keep as is?
+                     // To sort them separately or alongside?
+                     // Option A: Keep score as is (0-99999) - will sort differently
+                     // return value;
+                     // Option B: Normalize score to 0-100 (loses precision)
+                      return Math.max(0, Math.min(100, Math.round(value / 999.99)));
+                     // Option C: Map score to a very high number so it always sorts last/first if mixed?
+                     // return 100000 + value; // To sort scores after stars/percent
+                     // Let's go with Option A for now - keep score value separate
+                     return value; // Keep original score value
+                default:
+                    return null; // Unknown style
+            }
+        };
+
+        sortedData.sort((aMeta, bMeta) => {
+             switch (sortValue) {
+                 case 'name-asc': return (aMeta.name || '').localeCompare(bMeta.name || '');
+                 case 'name-desc': return (bMeta.name || '').localeCompare(aMeta.name || '');
+                 case 'release-asc': return (aMeta.releaseTimestamp || 0) - (bMeta.releaseTimestamp || 0);
+                 case 'release-desc': return (bMeta.releaseTimestamp || 0) - (aMeta.releaseTimestamp || 0);
+                 case 'rating-asc': { // Sort Low to High
+                     const ratingA = getComparableRating(aMeta);
+                     const ratingB = getComparableRating(bMeta);
+                     const styleA = aMeta.userRatingStyle || 'score';
+                     const styleB = bMeta.userRatingStyle || 'score';
+
+                     // Handle nulls (unrated) - sort them last
+                     if (ratingA === null && ratingB === null) return 0;
+                     if (ratingA === null) return 1; // a is null, put it after b
+                     if (ratingB === null) return -1; // b is null, put it after a
+
+                     // If styles differ and one is score, sort score separately (e.g., after others)
+                     // This example sorts scores AFTER stars/percent
+                     if (styleA === 'score' && styleB !== 'score') return 1; // Sort a (score) after b
+                     if (styleA !== 'score' && styleB === 'score') return -1; // Sort b (score) after a
+
+                     // If styles are the same (or both not score), compare normalized/original values
+                     return ratingA - ratingB;
+                 }
+                 case 'rating-desc': { // Sort High to Low
+                     const ratingA = getComparableRating(aMeta);
+                     const ratingB = getComparableRating(bMeta);
+                     const styleA = aMeta.userRatingStyle || 'score';
+                     const styleB = bMeta.userRatingStyle || 'score';
+
+                     // Handle nulls (unrated) - sort them last
+                     if (ratingA === null && ratingB === null) return 0;
+                     if (ratingA === null) return 1; // a is null, put it after b
+                     if (ratingB === null) return -1; // b is null, put it after a
+
+                     // Sort scores AFTER stars/percent
+                     if (styleA === 'score' && styleB !== 'score') return 1;
+                     if (styleA !== 'score' && styleB === 'score') return -1;
+
+                     // Compare values (descending)
+                     return ratingB - ratingA;
+                 }
+				 // Developer Sort
+                 case 'developer-asc': return (aMeta.developer || '').localeCompare(bMeta.developer || '');
+				 case 'developer-desc': return (bMeta.developer || '').localeCompare(aMeta.developer || ''); // Reverse comparison
+                 // Add user number sorting later
+                 default: return 0;
+             }
+        });
+
+
+        // --- Render Cards ---
+         if (sortedData.length === 0) {
+              collectionGrid.innerHTML = '<p class="info-message">No game cards match the current filter.</p>';
+              return;
+         }
+
+        sortedData.forEach(meta => {
+             const cardElement = document.createElement('div');
+             cardElement.classList.add('game-card');
+             cardElement.dataset.gameId = meta.id;
+
+             // --- Create Cover Image (or Placeholder) ---
+             let coverElement;
+             const displayCoverUrl = meta.coverUrl || '';
+             if (displayCoverUrl) {
+                 coverElement = document.createElement('img');
+                 coverElement.src = displayCoverUrl;
+                 coverElement.alt = `${meta.name || ''} Cover`;
+                 coverElement.classList.add('cover');
+                 coverElement.loading = 'lazy';
+                 coverElement.onerror = () => { coverElement.style.display='none'; };
+             } else {
+                 coverElement = document.createElement('div');
+                 coverElement.classList.add('cover-placeholder');
+                 coverElement.textContent = 'No Cover';
+             }
+
+             // --- Add Click Listener to Cover ---
+             if (meta.sourceFile) { // Check if sourceFile exists
+                 coverElement.style.cursor = 'pointer';
+                 coverElement.title = `View Card: ${meta.name}`;
+                 coverElement.addEventListener('click', (e) => {
+                     e.preventDefault();
+                     // Path relative to public/ as served by express.static
+                     const filePath = `results/${meta.sourceFile}`; // Construct path using sourceFile
+                     console.log(`Showing lightbox for: ${filePath}`);
+                     showLightbox(filePath); // Call lightbox function
+                 });
+             } else {
+                 console.warn(`Card for "${meta.name}" missing sourceFile metadata, cannot add lightbox link.`);
+             }
+			 // --- End Click Listener ---
+             cardElement.appendChild(coverElement); // Append cover first
+
+
+             // --- Add other card details using createElement/appendChild ---
+             const titleElement = document.createElement('h4');
+             titleElement.textContent = meta.name || 'No Title';
+             cardElement.appendChild(titleElement);
+
+             const devElement = document.createElement('p');
+             devElement.textContent = meta.developer || 'N/A';
+             cardElement.appendChild(devElement);
+
+             const releaseElement = document.createElement('p');
+             releaseElement.textContent = meta.releaseDate || 'N/A';
+             cardElement.appendChild(releaseElement);
+
+             // --- Conditionally add Rating Element ---
+             // Check if a valid rating value exists AND the style isn't 'off'
+             if (meta.userRatingValue !== null && meta.userRatingValue !== undefined && meta.userRatingStyle !== 'off') {
+                const ratingElement = document.createElement('p');
+                // Use getStaticRatingHtml which returns an HTML string
+                ratingElement.innerHTML = getStaticRatingHtml(meta.userRatingStyle || 'score', meta.userRatingValue); // Pass style and value
+                cardElement.appendChild(ratingElement); // Append only if rating exists
+             }
+
+             if (meta.userPlatform) {
+                const playedOnElement = document.createElement('p');
+                playedOnElement.classList.add('played-on-section');
+                const label = document.createElement('small');
+                label.textContent = 'Played:';
+                playedOnElement.appendChild(label);
+                const logoPath = getLogoPathForPlatform(meta.userPlatform);
+                const logoImg = document.createElement('img');
+                logoImg.src = logoPath;
+                logoImg.alt = meta.userPlatform;
+                logoImg.title = meta.userPlatform;
+                logoImg.onerror = () => { logoImg.style.display='none'; };
+                playedOnElement.appendChild(logoImg);
+                cardElement.appendChild(playedOnElement);
+             }
+			 
+			 // --- Create Action Button Container ---
+             const actionsContainer = document.createElement('div');
+             actionsContainer.classList.add('card-actions');
+			 
+             // --- Create "Set Active for OBS" Button ---
+             if (meta.sourceFile) { // Only if we have a file to copy
+                const setActiveButton = document.createElement('button');
+                setActiveButton.type = 'button';
+                setActiveButton.classList.add('set-active-button');
+                setActiveButton.title = 'Set this card as the current one for OBS';
+
+                const btnIcon = document.createElement('img');
+                // Set initial icon based on whether this card is the active one
+                btnIcon.src = (meta.sourceFile === activeCardFilename)
+                               ? 'images/obs_logo.png'
+                               : 'images/obs_logo_shadow.png';
+                btnIcon.alt = 'Set Active';
+                // Size controlled by CSS
+                setActiveButton.appendChild(btnIcon);
+
+                const btnText = document.createElement('span');
+                btnText.textContent = (meta.sourceFile === activeCardFilename) ? 'Active' : 'Set Active';
+                setActiveButton.appendChild(btnText);
+
+                // Add click listener to call backend
+                setActiveButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click if needed
+                    setActiveCardAndCopyUrl(meta.sourceFile, cardElement, setActiveButton); // Call function that handles BOTH setting active and copying
+                });
+				actionsContainer.appendChild(setActiveButton); // Add button to actions div
+				}
+				
+                cardElement.appendChild(actionsContainer); // Append actions container
+                collectionGrid.appendChild(cardElement);
+
+                // Add active class to card element if it's the current one
+                if (meta.sourceFile === activeCardFilename) cardElement.classList.add('active-card');
+             
+				// --- End "Set Active for OBS" Button ---
+
+        });
+         console.log(`Rendered ${sortedData.length} cards.`);
+    } // End renderCollectionGrid
+	
+	 // --- Sets Active Card AND Copies URL ---
+    async function setActiveCardAndCopyUrl(filename, clickedCardElement, clickedButtonElement) {
+        console.log(`Setting active card to: ${filename} and copying URL...`);
+
+        const actionsContainer = clickedButtonElement.closest('.card-actions'); // Find container for tooltip
+        const originalText = clickedButtonElement.querySelector('span').textContent;
+        const icon = clickedButtonElement.querySelector('img');
+        clickedButtonElement.disabled = true;
+        //if (icon) icon.src = 'images/loading_spinner.gif'; // Optional: loading spinner
+        clickedButtonElement.querySelector('span').textContent = 'Working...';
+
+        let setActiveSuccess = false;
+        try {
+            // --- Action 1: Set Active Card on Backend ---
+            const response = await fetch(`${API_BASE_URL}/api/setCurrentCard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceFilename: filename })
+            });
+
+            if (!response.ok) {
+                 const errorData = await response.json().catch(()=>({error: `Server error ${response.status}`}));
+                 throw new Error(errorData.error || `Failed to set active card (status ${response.status})`);
+            }
+
+            console.log(`Successfully set active card file to ${filename}`);
+            setActiveSuccess = true; // Mark backend success
+
+            // --- Action 2: Copy URL to Clipboard ---
+            await navigator.clipboard.writeText(OBS_URL);
+            console.log('OBS URL copied to clipboard:', OBS_URL);
+
+            // --- Action 3: Update UI and State ---
+            const oldActiveFilename = activeCardFilename;
+            activeCardFilename = filename; // Update global state
+            localStorage.setItem('activeCardFilename', activeCardFilename); // Save state
+
+            // Update ALL card buttons/classes
+            const allCards = collectionGrid.querySelectorAll('.game-card');
+            allCards.forEach(card => {
+                const cardFilename = gameCardCollection.find(gc => gc.id == card.dataset.gameId)?.sourceFile;
+                const button = card.querySelector('.set-active-button');
+                const buttonIcon = button?.querySelector('img');
+                const buttonText = button?.querySelector('span');
+
+                if (cardFilename === activeCardFilename) { // The one just clicked
+                    card.classList.add('active-card');
+                    if (button) {
+                         if (buttonIcon) buttonIcon.src = 'images/obs_logo.png';
+                         if (buttonText) buttonText.textContent = 'Active';
+                         button.disabled = false; // Re-enable
+                    }
+                } else { // Other cards
+                    card.classList.remove('active-card');
+                    if (button) {
+                         if (buttonIcon) buttonIcon.src = 'images/obs_logo_shadow.png';
+                         if (buttonText) buttonText.textContent = 'Set Active';
+                         button.disabled = false; // Re-enable
+                    }
+                }
+            });
+
+            // Show success tooltip near the button container
+            showTooltip(actionsContainer, 'Set Active & URL Copied!');
+
+        } catch (error) {
+            console.error("Error setting active card or copying URL:", error);
+            // Show error tooltip near the button container
+            showTooltip(actionsContainer, `Error: ${error.message}`, true);
+            // Reset button state only if backend failed, keep trying to copy maybe?
+             if (icon) icon.src = (filename === activeCardFilename) ? 'images/obs_logo.png' : 'images/obs_logo_shadow.png'; // Restore icon based on *potentially* updated state
+             clickedButtonElement.querySelector('span').textContent = (filename === activeCardFilename) ? 'Active' : 'Set Active'; // Restore text
+             clickedButtonElement.disabled = false; // Re-enable on error
+        }
+    } // End setActiveCardAndCopyUrl
+
+	// --- Lightbox Control Functions ---
+    function showLightbox(url) {
+        if (!url) return;
+        // Set iframe src BEFORE making lightbox visible
+        lightboxIframe.src = url;
+        lightbox.classList.remove('lightbox-hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function hideLightbox() {
+        lightbox.classList.add('lightbox-hidden');
+        document.body.style.overflow = ''; // Restore background scrolling
+        // Clear iframe src to stop potential loading/scripts in background
+        setTimeout(() => { lightboxIframe.src = 'about:blank'; }, 300); // Delay slightly for fade-out
+    }
+    // --- End Lightbox ---
+
+	// --- Function to Set Active Card ---
+    async function setActiveCard(filename, clickedCardElement, clickedButtonElement) {
+        console.log(`Setting active card to: ${filename}`);
+
+        // Provide visual feedback
+        const originalText = clickedButtonElement.querySelector('span').textContent;
+        const icon = clickedButtonElement.querySelector('img');
+        clickedButtonElement.disabled = true;
+        if (icon) icon.src = 'images/loading_spinner.gif'; // Optional: use a loading spinner
+        clickedButtonElement.querySelector('span').textContent = 'Setting...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/setCurrentCard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourceFilename: filename })
+            });
+
+            if (response.ok) {
+                console.log(`Successfully set active card to ${filename}`);
+                const oldActiveFilename = activeCardFilename; // Store previous active name
+                activeCardFilename = filename; // Update global state
+                localStorage.setItem('activeCardFilename', activeCardFilename); // Save state
+
+                // Update UI for ALL cards
+                const allCards = collectionGrid.querySelectorAll('.game-card');
+                allCards.forEach(card => {
+                    const cardFilename = gameCardCollection.find(gc => gc.id == card.dataset.gameId)?.sourceFile; // Find filename from dataset id
+                    const button = card.querySelector('.set-active-button');
+                    const buttonIcon = button?.querySelector('img');
+                    const buttonText = button?.querySelector('span');
+
+                    if (cardFilename === activeCardFilename) {
+                        // This is the newly active card
+                        card.classList.add('active-card');
+                        if (button) {
+                             if (buttonIcon) buttonIcon.src = 'images/obs_logo.png';
+                             if (buttonText) buttonText.textContent = 'Active';
+                        }
+                    } else {
+                         // This is not the active card (or was the old one)
+                        card.classList.remove('active-card');
+                        if (button) {
+                             if (buttonIcon) buttonIcon.src = 'images/obs_logo_shadow.png';
+                             if (buttonText) buttonText.textContent = 'Set Active';
+                        }
+                    }
+                    if(button) button.disabled = false; // Re-enable all buttons
+                });
+
+            } else {
+                 const errorData = await response.json().catch(() => ({error: `Server error ${response.status}`}));
+                 throw new Error(errorData.error || `Failed to set active card (status ${response.status})`);
+            }
+
+        } catch (error) {
+            console.error("Error setting active card:", error);
+            alert(`Failed to set active card: ${error.message}`);
+            // Reset button state on error
+            if (icon) icon.src = (filename === activeCardFilename) ? 'images/obs_logo.png' : 'images/obs_logo_shadow.png';
+            clickedButtonElement.querySelector('span').textContent = originalText;
+            clickedButtonElement.disabled = false;
+        }
+    }
+    // --- End Set Active Card ---
+
+	// --- Copy URL and Tooltip Functions ---
+    /**
+     * Copies the OBS URL to the clipboard and shows feedback.
+     * @param {HTMLElement} buttonContainer - The container (.card-actions) of the clicked button.
+     */
+    async function copyObsUrlToClipboard() { // Now less likely to be called directly
+        try {
+            await navigator.clipboard.writeText(OBS_URL);
+            console.log('OBS URL copied.');
+            return true; // Indicate success
+        } catch (err) {
+            console.error('Failed to copy OBS URL: ', err);
+            return false; // Indicate failure
+        }
+    }
+
+    /**
+     * Shows a tooltip message relative to a target element container.
+     * Manages its own removal timeout.
+     * @param {HTMLElement} targetContainer - The element container (.card-actions) to append to.
+     * @param {string} message - Text to display.
+     * @param {boolean} isError - Optional flag for error styling.
+     */
+    function showTooltip(targetContainer, message, isError = false) {
+        if (!targetContainer) {
+            console.error("showTooltip: Target container is invalid.");
+            return;
+        }
+
+        // --- Clear Existing Tooltip/Timeout for THIS container ---
+        const existingTooltip = targetContainer.querySelector('.tooltip-feedback');
+        if (existingTooltip) {
+            // Check if there's an existing timeout stored on the element
+            const existingTimeoutId = existingTooltip._tooltipTimeoutId; // Use custom property
+            if (existingTimeoutId) {
+                clearTimeout(existingTimeoutId);
+                console.log("Cleared previous tooltip timeout for this container.");
+            }
+            existingTooltip.remove(); // Remove old tooltip immediately
+        }
+        // --- End Clear ---
+
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.textContent = message;
+        tooltip.classList.add('tooltip-feedback');
+        if (isError) tooltip.classList.add('error');
+
+        // Append tooltip INSIDE the target container
+        targetContainer.appendChild(tooltip);
+
+        // Show tooltip (slight delay ensures it's appended before class change)
+        requestAnimationFrame(() => {
+            tooltip.classList.add('show');
+        });
+
+        // Set timeout to hide AND remove tooltip, store ID on element
+        const timeoutId = setTimeout(() => {
+            // Check if tooltip still exists in the DOM before trying to remove class/element
+            if (tooltip.parentNode) {
+                tooltip.classList.remove('show');
+                // Remove from DOM after transition
+                tooltip.addEventListener('transitionend', () => {
+                     if (tooltip.parentNode) tooltip.remove();
+                }, { once: true });
+            }
+            // Clear the stored timeout ID from the element itself after execution
+             delete tooltip._tooltipTimeoutId;
+
+        }, 1500); // Tooltip visible for 1.5 seconds
+
+        // Store the timeout ID directly on the tooltip element
+        tooltip._tooltipTimeoutId = timeoutId;
+
+    } 
+    // --- End of Copy URL and Tooltip Functions ---	
+
+	// --- Lightbox Control Functions ---
+    function showLightbox(url) {
+        if (!url) return;
+        console.log("Showing lightbox for URL:", url);
+        // Set src and add listener for iframe load event
+        lightboxIframe.src = url;
+        lightboxIframe.onload = () => {
+             console.log("Lightbox iframe finished loading.");
+             // Send theme variables AFTER iframe has loaded its content
+             updateLightboxThemeIfOpen();
+             // Clear handler after first load
+             lightboxIframe.onload = null;
+        };
+        lightbox.classList.remove('lightbox-hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideLightbox() {
+        lightbox.classList.add('lightbox-hidden');
+        document.body.style.overflow = '';
+        setTimeout(() => { lightboxIframe.src = 'about:blank'; }, 300);
+    }
+	// --- End of Lightbox Control Functions ---	
+
     // --- Core Search and Display Functions ---
     async function searchGamesList() {
         console.log("--- searchGamesList function CALLED ---"); // <<<--- DEBUG LOG
@@ -1490,40 +2293,130 @@ function loadSettings() {
         gameInfoDiv.appendChild(detailsDiv);
         resultsDiv.appendChild(gameInfoDiv); // Add main info to the page
 		
-		// --- Create and Add "Save for OBS" Button to its own container ---
+		// --- Create BOTH Buttons ---
+
+        // 1. Add to Collection Button
+        const addButton = document.createElement('button');
+        addButton.id = 'add-to-collection-button';
+        addButton.type = 'button';
+        addButton.title = 'Save card to server collection (public/results/)';
+        const addIcon = document.createElement('img');
+        addIcon.src = 'images/floppy.png'; // Icon
+        addIcon.alt = 'Add';
+        addIcon.width = 24; addIcon.height = 24; addIcon.onerror = () => { addIcon.remove(); };
+        const addText = document.createElement('span');
+        addText.textContent = 'Add to Collection';
+        addButton.appendChild(addIcon);
+        addButton.appendChild(addText);
+
+        // 2. Save HTML for OBS Button
         const saveButton = document.createElement('button');
         saveButton.id = 'save-obs-button';
         saveButton.type = 'button';
-		
-        // ... (create saveIcon, saveText) ...
+        saveButton.title = 'Download card HTML file';
 		const saveIcon = document.createElement('img');
-        saveIcon.src = 'images/floppy.png'; // Verify this path is correct relative to index.html
-        saveIcon.alt = 'Save Icon';
-        // Size is controlled by CSS, but setting here helps layout consistency
-        saveIcon.width = 24;
-        saveIcon.height = 24;
-        saveIcon.onerror = () => { // Handle if button icon fails to load
-             console.error("Failed to load OBS save button icon: images/GameGet_Logo.png");
-             saveIcon.remove(); // Remove broken image
-        };
-
+        saveIcon.src = 'images/code.png'; // Icon
+        saveIcon.alt = 'Save';
+        saveIcon.width = 24; saveIcon.height = 24; saveIcon.onerror = () => { saveIcon.remove(); };
         const saveText = document.createElement('span');
-        saveText.textContent = 'Save HTML for OBS'; // Verify text content
-		
-         // --- Append BOTH icon and text to the button ---
+        saveText.textContent = 'Save HTML'; // Shorten text maybe
         saveButton.appendChild(saveIcon);
         saveButton.appendChild(saveText);
-        // --- End Append ---
-		
-		console.log("displayGameDetails: 'data' object before adding listener:", JSON.stringify(data, null, 2));
-		
-        // Add click listener
-        saveButton.addEventListener('click', () => {
-            saveResultsHtml(data); // Pass the game name for the filename
+
+        // Feedback span (shared by both buttons?)
+        const feedbackSpan = document.createElement('span');
+        feedbackSpan.classList.add('collection-feedback');
+
+        // --- Add Listeners for Buttons ---
+
+        // Listener for "Add to Collection"
+        addButton.addEventListener('click', async () => {
+            console.log("Add to Collection clicked.");
+            addButton.disabled = true;
+            saveButton.disabled = true; // Disable both during operation
+            feedbackSpan.textContent = 'Saving...';
+            feedbackSpan.classList.remove('error', 'show');
+            feedbackSpan.classList.add('show');
+
+            try {
+                // Generate the HTML content and filename using saveResultsHtml
+                // We need saveResultsHtml to RETURN the content and filename now
+                const result = await generateStaticHtml(data); // Use a helper
+
+                if (!result) { throw new Error("HTML generation failed."); }
+
+                // Send POST request to backend
+                const response = await fetch(`${API_BASE_URL}/api/saveToCollection`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ filename: result.filename, htmlContent: result.fullHtml })
+                });
+
+                if (response.ok) {
+                     console.log("Successfully saved to server collection.");
+                     feedbackSpan.textContent = 'Added!';
+                     feedbackSpan.classList.remove('error');
+                     setTimeout(() => feedbackSpan.classList.remove('show'), 2500); // Hide after 2.5s
+                } else {
+                     const errorData = await response.json().catch(()=>({error: `Server error ${response.status}`}));
+                     throw new Error(errorData.error || `Failed to save (status ${response.status})`);
+                }
+
+            } catch (error) {
+                console.error("Error adding to collection:", error);
+                feedbackSpan.textContent = `Error: ${error.message}`;
+                feedbackSpan.classList.add('error', 'show');
+                // Don't auto-hide error message
+            } finally {
+                 addButton.disabled = false;
+                 saveButton.disabled = false;
+            }
         });
-        // --- Append button to the DEDICATED container ---
+
+        // Listener for "Save HTML for OBS" (now just triggers download)
+        saveButton.addEventListener('click', async () => {
+             console.log("Save HTML clicked.");
+             addButton.disabled = true; // Disable both during operation
+             saveButton.disabled = true;
+             feedbackSpan.textContent = 'Preparing Download...';
+             feedbackSpan.classList.remove('error', 'show');
+             feedbackSpan.classList.add('show');
+
+             try {
+                // Generate HTML and filename
+                const result = await generateStaticHtml(data); // Use helper
+
+                if (!result) { throw new Error("HTML generation failed."); }
+
+                // Trigger download directly
+                const blob = new Blob([result.fullHtml], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = result.filename;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log(`Download triggered for ${link.download}.`);
+                feedbackSpan.textContent = 'Downloaded!';
+                setTimeout(() => feedbackSpan.classList.remove('show'), 2500);
+
+             } catch(error) {
+                 console.error("Error saving HTML for OBS:", error);
+                 feedbackSpan.textContent = `Error: ${error.message}`;
+                 feedbackSpan.classList.add('error', 'show');
+             } finally {
+                 addButton.disabled = false;
+                 saveButton.disabled = false;
+             }
+        });
+
+        // Append buttons and feedback to the container
+        obsButtonContainer.appendChild(addButton); // Add button first
         obsButtonContainer.appendChild(saveButton);
-        // --- End Save Button ---
+        obsButtonContainer.appendChild(feedbackSpan);
+
 		
 		// --- Populate Store Links ---
         let hasAnyStoreLink = false;
@@ -1644,24 +2537,22 @@ function loadSettings() {
         container.appendChild(link);
     } // End addStoreButton
 
-          // --- Function to Save HTML for OBS ---
- async function saveResultsHtml(gameData) { // Now accepts full gameData object
-		console.log("OBS SAVE: Received gameData:", JSON.stringify(gameData, null, 2));
-        const gameName = gameData.name || 'Untitled Game';
-        const gameId = gameData.id || Date.now();
-        console.log(`OBS SAVE: Starting generation for "${gameName}" (ID: ${gameId})`);
+ // --- Create NEW Helper Function to Generate Static HTML ---
+    // This extracts the common logic from the old saveResultsHtml
+    async function generateStaticHtml(gameData) {
+         const gameName = gameData.name || 'Untitled Game';
+         const gameId = gameData.id || Date.now();
+         console.log(`Generate HTML: Starting for "${gameName}" (ID: ${gameId})`);
 
-        requestAnimationFrame(async () => { // Use rAF for style computation timing
-            try {
-                // --- Step 0: Get current UI/Rating state ---
-                const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
-                // Get rating value for the specific game being saved
-                const ratingValue = (currentGameRating.gameId === gameData.id) ? currentGameRating.value : null;
-                const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
-                const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
+         try {
+            // Step 0: Get current settings (rating, stores, text visibility)
+            const ratingStyle = localStorage.getItem(LOCAL_STORAGE_RATING_STYLE_KEY) || 'off';
+            const ratingValue = (currentGameRating.gameId === gameData.id) ? currentGameRating.value : null;
+            const shouldShowStores = localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === null ? true : (localStorage.getItem(LOCAL_STORAGE_STORE_LINKS_KEY) === 'true');
+            const isPlatformTextHidden = document.body.classList.contains('platform-text-hidden');
 
-                // --- Step 1: Clone #results content & modify clone for static output ---
-                console.log("OBS SAVE: Cloning #results div and modifying clone...");
+            // Step 1: Clone results & Modify clone
+            console.log("OBS SAVE: Cloning #results div and modifying clone...");
                 const resultsClone = resultsDiv.cloneNode(true);
                 // 1a: Inject Static Rating / Remove Input Container
                 const ratingContainerInClone = resultsClone.querySelector('#game-rating-container');
@@ -1683,10 +2574,8 @@ function loadSettings() {
                 // 1d: Get final inner HTML of the modified clone
                 const resultsContent = resultsClone.innerHTML;
 
-
-                // --- Step 2: Fetch and clean base CSS ---
-                /* ... Keep logic to fetch style.css, remove themes, @font-face, :root ... */
-                let baseCss = "/* Base styles error */";
+            // Step 2: Fetch and clean base CSS
+            let baseCss = "/* Base styles error */";
                 try {
                     console.log("OBS SAVE: Fetching style.css...");
                     const cssResponse = await fetch('style.css');
@@ -1707,10 +2596,8 @@ function loadSettings() {
                     } else { throw new Error(`Fetch failed: ${cssResponse.status}`); }
                 } catch (error) { console.error("OBS SAVE: Error fetching/cleaning style.css:", error); }
 
-
-                // --- Step 3: Get Computed Variable Values for styling ---
-                /* ... Keep logic to get computed vars into appliedVariablesString ... */
-                console.log("OBS SAVE: Getting computed styles from BODY...");
+            // Step 3: Get Computed Variable Values
+            console.log("OBS SAVE: Getting computed styles from BODY...");
                 let appliedVariablesString = "";
                 const varNames = [
                      '--bg-color', '--element-bg', '--text-color', '--text-muted',
@@ -1736,9 +2623,8 @@ function loadSettings() {
                 });
                 // --- activeFontValue is now set correctly ---
 
-
-                // --- Step 4: Determine required Font Definitions ---
-                /* ... Keep logic to generate fontDefinitionsHtml (local @font-face OR google <link>s) ... */
+            // Step 4: Determine required Font Definitions
+           /* ... Keep logic to generate fontDefinitionsHtml (local @font-face OR google <link>s) ... */
                  let fontDefinitionsHtml = ""; // This will hold the <link> or <style> tags
 
                 console.log(`OBS SAVE: Determining font definition for active font: ${activeFontValue}`);
@@ -1787,9 +2673,8 @@ function loadSettings() {
                     fontDefinitionsHtml = '<!-- System default font active -->';
                 }
 
-
-                // --- Step 5: Generate Metadata Tags (Specific Fields) ---
-                console.log("OBS SAVE: Generating metadata tags...");
+            // Step 5: Generate Metadata Tags
+            console.log("OBS SAVE: Generating metadata tags...");
                 let metaTags = [];
                 // Helper to create meta tag, handling quotes and nulls
                 const createMetaTag = (name, content) => {
@@ -1827,9 +2712,8 @@ function loadSettings() {
                 console.log("OBS SAVE: Generated metadata.");
                 // --- End Metadata ---
 
-
-                // --- Step 6: Construct the full HTML structure ---
-                const fullHtml = `<!DOCTYPE html>
+            // Step 6: Construct the full HTML structure
+            const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1847,15 +2731,56 @@ function loadSettings() {
 ${appliedVariablesString}
         }
         /* OBS Specific Overrides */
-        body { position: relative; padding: 0;}
-        #results { position: relative; border: none !important; box-shadow: none !important; padding: 10px !important; margin: 0 !important; }
+        body { position: relative; margin: 0 auto; background-color: transparent !important;}
+        #results { position: relative; max-width: 850px; background-color: var(--element-bg) !important; border: 8px solid var(--bg-color) !important; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3) !important; padding: 15px !important; margin: 0 auto !important; }
         /* Hide interactive elements specifically for OBS */
         #results button, #results input, #results select, #results a:not(.store-button) { display: none !important; }
         #results .store-button { /* Ensure store buttons are visible if container wasn't removed */ display: inline-flex !important; }
-		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin: 10px 0 !important; padding: 5px 0 !important; font-size: 1.8em !important; z-index: auto; }
+		#game-rating-container { /* Ensure rating container is positioned */ display: block !important; background: none !important; box-shadow: none !important; border: none !important; margin-top: -4px !important; margin-bottom: 8px !important; padding: 0 !important; font-size: 1.8em !important; z-index: auto; }
 		#game-rating-container > * {  font-size: 1em !important; font-weight: bold; }
 		#game-rating-container .static-rating .stars { font-size: 1em !important;  }
+		.game-details ul {margin: 0 0 0 0 !important;} 
     </style>
+	 <!-- NEW: Script to listen for messages from parent -->
+    <script>
+        window.addEventListener('message', (event) => {
+            // Basic security check: event.origin (use specific origin in production)
+            // console.log('iFrame received message:', event.data);
+            if (event.data && event.data.type === 'SET_THEME_VARS') {
+                const variables = event.data.payload; // This is the object { '--bg-color': '#...', ... } or null
+                const root = document.documentElement; // Get the :root element (html)
+
+                // Define the list of expected variables INSIDE the iframe script
+                const expectedVars = [
+                     '--bg-color', '--element-bg', '--text-color', '--text-muted',
+                     '--border-color', '--border-light', '--primary-color', '--primary-hover',
+                     '--accent-color', '--accent-darker', '--error-color', '--body-font',
+                     '--platform-logo-size'
+                ];
+
+                if (variables) {
+                    console.log('iFrame applying variables from parent:', variables);
+                    // Apply received variables as inline styles to :root
+                    expectedVars.forEach(varName => {
+                         if (variables[varName]) {
+                            root.style.setProperty(varName, variables[varName]);
+                         } else {
+                             // If parent didn't send a var, remove potential inline style
+                             // to ensure CSS definition takes over
+                              root.style.removeProperty(varName);
+                         }
+                    });
+                } else {
+                    console.log('iFrame received null variables, reverting to embedded styles.');
+                     // Parent wants iframe to use its own embedded styles, so remove all inline overrides
+                     expectedVars.forEach(varName => {
+                        root.style.removeProperty(varName);
+                    });
+                }
+            }
+        });
+    <\/script>
+    <!-- End Message Listener Script -->
 </head>
 <body class="${isPlatformTextHidden ? 'platform-text-hidden' : ''}">
     <div id="results">
@@ -1864,38 +2789,31 @@ ${appliedVariablesString}
 </body>
 </html>`;
 
-                // --- Step 7: Create Blob and Download Link ---
-                const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
-                link.download = `${safeGameName}_GameGet.html`; // Use ID in filename
-                link.href = url;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                console.log(`Download triggered for ${link.download}. Includes specific metadata.`);
+            // Step 7: Generate Filename
+            const safeGameName = gameName.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
+            const filename = `${safeGameName}_${gameId}_Card.html`;
 
-            } catch (saveError) {
-                 console.error("Error during saveResultsHtml execution:", saveError);
-                 alert("An error occurred while generating the HTML file.");
-            }
-        }); // End requestAnimationFrame
-    } // End saveResultsHtml
+            console.log("Generate HTML: Success.");
+            return { filename, fullHtml }; // Return filename and content
+
+         } catch(error) {
+              console.error("Error during generateStaticHtml:", error);
+              return null; // Return null on error
+         }
+    } // End generateStaticHtml
     
 
     // Initial Setup
     loadLocalFonts().then(() => { // Load local fonts first
          console.log("Local fonts loaded (or attempted). Now loading other settings...");
          loadSettings(); // THEN load other settings (which might select a dynamic font)
+		 // Load active card filename from storage on initial load
+		 activeCardFilename = localStorage.getItem('activeCardFilename');
+		 console.log(`Initial active card file: ${activeCardFilename}`);
          console.log("Initial setup complete.");
     }).catch(err => {
          console.error("Error during initial font load:", err);
          // Still try to load other settings even if fonts fail
-		 
-    loadSettings(); // Load saved settings on page load
-	console.log("Initial setup complete.");
 	});
 
 
