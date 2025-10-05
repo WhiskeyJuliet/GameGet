@@ -15,6 +15,9 @@ const port = 3000;
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
+// GameGet-specific config
+const SEARCH_LIMIT = 50; // Max search results to return
+
 if (!TWITCH_CLIENT_ID || !TWITCH_CLIENT_SECRET) {
     console.error("FATAL ERROR: TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET not found in .env file.");
     process.exit(1);
@@ -64,7 +67,7 @@ app.get('/search', async (req, res) => {
         const accessToken = await getTwitchAccessToken();
         const igdbUrl = 'https://api.igdb.com/v4/games';
 
-        // Query: Search, get ID, Name, and First Release Date, limit to 35 results
+        // Query: Search, get ID, Name, and First Release Date, limit to results specified in SEARCH_LIMIT
 		// category for game-type 0:main_game, 1:dlc_addon, 2:expansion, 3:bundle, 4:standalone_expansion, 5:mod, 6:episode, 7:season, 8:remake, 9:remaster, 10:expanded_game, 11:port, 12:fork
         const requestBody = `
             search "${gameQuery.replace(/"/g, '\\"')}";
@@ -72,16 +75,15 @@ app.get('/search', async (req, res) => {
                 id,
                 name,
                 first_release_date,
-                category,
+                game_type,
                 version_parent,
                 platforms.name;
-            limit 35;
-            where category != 1 & category != 2 & category != 6 & category != 7;
+            limit ${SEARCH_LIMIT};
         `;
            
 
         // Update console log message
-        console.log(`Querying IGDB for top 35 list matching "${gameQuery}"...`);
+        console.log(`Querying IGDB for top ${SEARCH_LIMIT} list matching "${gameQuery}"...`);
         const igdbResponse = await axios.post(igdbUrl, requestBody, {
             headers: {
                 'Client-ID': TWITCH_CLIENT_ID,
@@ -100,15 +102,15 @@ app.get('/search', async (req, res) => {
                 }
                 // Determine Game Type String
                 let gameType = 'Game'; // Default
-                switch (game.category) {
+                switch (game.game_type) {
                     case 0: gameType = 'Main Game'; break;
-                    // case 1: gameType = 'DLC/Addon'; break; // Excluded by 'where' clause, but keep for reference
-                    // case 2: gameType = 'Expansion'; break;
+                    case 1: gameType = 'DLC/Addon'; break; // Excluded by 'where' clause, but keep for reference
+                    case 2: gameType = 'Expansion'; break;
                     case 3: gameType = 'Bundle'; break;
                     case 4: gameType = 'Standalone Expansion'; break;
                     case 5: gameType = 'Mod'; break;
-                    // case 6: gameType = 'Episode'; break;
-                    // case 7: gameType = 'Season'; break;
+                    case 6: gameType = 'Episode'; break;
+                    case 7: gameType = 'Season'; break;
                     case 8: gameType = 'Remake'; break;
                     case 9: gameType = 'Remaster'; break;
                     case 10: gameType = 'Expanded Game'; break;
@@ -143,7 +145,7 @@ app.get('/search', async (req, res) => {
             });
             // --- End of mapping ---
 
-            console.log(`Found ${resultsWithYear.length} potential matches (sending top 35).`);
+            console.log(`Found ${resultsWithYear.length} potential matches (sending top ${SEARCH_LIMIT}).`);
             res.json(resultsWithYear);
         } else {
             console.log(`No results found on IGDB for "${gameQuery}".`);
