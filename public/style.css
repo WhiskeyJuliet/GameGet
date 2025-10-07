@@ -546,7 +546,7 @@ input {
     border: 1px solid var(--border-light);
 }
 
-/* NEW: Specific Type Highlights */
+/* Specific Type Highlights */
 .type-main-game { background-color: #007bff; color: #fff; border-color: #0056b3; }
 .type-mod { background-color: #6c757d; color: #fff; border-color: #5a6268; }
 .type-remaster { background-color: #1a6833; color: #fff; border-color: #124723; } /* Dark Green */
@@ -862,7 +862,7 @@ body #game-rating-container.rating-off /* Hide if style is 'off' (JS will add th
     /* Remove explicit width/height attributes set in JS later */
 }
 
-/* NEW: Class to hide the platform text */
+/* Class to hide the platform text */
 .platform-text-hidden .platform-name-text { /* Target the span inside */
     display: none;
 }
@@ -968,8 +968,8 @@ body.store-links-hidden .store-links-container {
 /* === Settings Cog & Panel === */
 #settings-cog {
     position: fixed;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     background: var(--element-bg);
     border: 1px solid var(--border-color);
     border-radius: 50%;
@@ -981,7 +981,7 @@ body.store-links-hidden .store-links-container {
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 5px var(--shadow-color);
-    z-index: 1001;
+    z-index: 1000;
     transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* Add color/border transition */
     /* --- Set the color for the icon --- */
     color: var(--text-color); /* Default state color */
@@ -1267,7 +1267,7 @@ transform: scale(0.8);
      color: #fff;
 }
 
-/* NEW: Styles for Import/Export Button Area */
+/* Styles for Import/Export Button Area */
 .import-export-buttons {
     margin-top: 20px; /* Space above buttons */
     padding-top: 15px;
@@ -1655,7 +1655,7 @@ transform: scale(0.98);
 
 
 
-/* === NEW: Footer Area === */
+/* === Footer Area === */
 .footer-area {
     max-width: 850px; /* Match main wrapper width */
     margin: 0 auto; /* Center */
@@ -1677,7 +1677,7 @@ transform: scale(0.98);
     color: var(--text-muted); /* Match surrounding text color */
 }
 
-/* === Disclaimer === */
+/* === Credits === */
 .credits {
     font-size: 0.8em;
     color: var(--text-muted);
@@ -1686,6 +1686,24 @@ transform: scale(0.98);
 }
 
 .credits a {
+    color: var(--text-muted); /* Match surrounding text color */
+	margin-right: 8px;
+    box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+/* === Version === */
+.version {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-align: center;
+	position:fixed;
+    bottom:0;
+    right:0;
+	z-index:999;
+
+}
+
+.version a {
     color: var(--text-muted); /* Match surrounding text color */
 	margin-right: 8px;
     box-shadow: 0 4px 6px var(--shadow-color);
