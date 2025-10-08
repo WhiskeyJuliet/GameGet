@@ -952,6 +952,14 @@ body.store-links-hidden .store-links-container {
 	background-color: #404044;
 }
 
+.itch-button {
+	background-color: #c54d4c; 
+    color: #ffffff;
+}
+.itch-button:hover {
+	background-color: #fa5c5b;
+}
+
 /* Loading/Error messages within store container */
 .store-loading, .store-error {
     width: 100%;

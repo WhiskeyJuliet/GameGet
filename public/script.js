@@ -1247,6 +1247,8 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
             return basePath + 'c16.png';
 		} else if (nameLower.includes('commodore')) {  // General fallback for Commodores
             return basePath + 'commodore.png';
+		} else if (nameLower.includes('zeebo')) {  // General fallback for Commodores
+            return basePath + 'zeebo.png';
 		}	
 		// Add more mappings here for other consoles/platforms as needed...
 
@@ -2433,9 +2435,9 @@ document.addEventListener('DOMContentLoaded', () => { // Ensure DOM is loaded
              data.igdbStoreLinks.forEach(link => { // link is {name, url}
                  let logoSrc = 'images/default_store.png';
                  if (link.name === 'Steam') logoSrc = 'images/steam_logo.png';
+				 else if (link.name === 'Itch') logoSrc = 'images/itch_logo.png';
                  else if (link.name === 'Epic Games') logoSrc = 'images/epic_logo.png';
-                 else if (link.name === 'GOG') logoSrc = 'images/gog_logo.png';
-				 else if (link.name === 'itch.io') logoSrc = 'images/itch_logo.png'; 
+                 else if (link.name === 'GOG') logoSrc = 'images/gog_logo.png'; 
                  // Add else if for other stores if needed
 
                  addStoreButton(storeLinksContainer, link.name, link.url, logoSrc);

@@ -124,10 +124,7 @@ app.get('/search', async (req, res) => {
                         }
                         break;
                 }
-                // Refine type if it's main game but has parent (might be a specific version)
-                if (game.category === 0 && game.version_parent) {
-                     gameType = 'Version/Port';
-                }
+
 
 				// Extract Platform Names
 				let platformNames = [];
@@ -187,7 +184,7 @@ app.get('/details/:gameId', async (req, res) => {
                 cover.url,
                 platforms.name,
                 involved_companies.company.name, involved_companies.developer,
-                websites.url, websites.category;
+                websites.url, websites.type;
             where id = ${parsedGameId};
             limit 1;
         `;
@@ -241,11 +238,12 @@ app.get('/details/:gameId', async (req, res) => {
             if (game.websites && Array.isArray(game.websites)) {
                 game.websites.forEach(site => {
                     let storeName = null;
-                    switch (site.category) { case 13: storeName = 'Steam'; break; case 16: storeName = 'Epic Games'; break; case 17: storeName = 'GOG'; break; }
+                    switch (site.type) { case 13: storeName = 'Steam'; break; case 15: storeName = 'Itch'; break; case 16: storeName = 'Epic Games'; break; case 17: storeName = 'GOG'; break; }
                     if (storeName && site.url) {
                          const urlLower = site.url.toLowerCase(); let isValid = false;
                          if (storeName === 'Steam' && urlLower.includes('store.steampowered.com/app/')) isValid = true;
-                         else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValid = true;
+                         else if (storeName === 'Itch' && (urlLower.includes('itch.io/') || urlLower.includes('itch'))) isValid = true;
+						 else if (storeName === 'Epic Games' && (urlLower.includes('store.epicgames.com/') || urlLower.includes('www.epicgames.com/store/'))) isValid = true;
                          else if (storeName === 'GOG' && urlLower.includes('gog.com/')) isValid = true;
                          if (isValid) gameData.igdbStoreLinks.push({ name: storeName, url: site.url });
                     }
